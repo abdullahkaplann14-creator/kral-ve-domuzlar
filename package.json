@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "assets": "node scripts/gen-assets.mjs",
-    "measure": "node scripts/assets.mjs"
+    "measure": "node scripts/assets.mjs",
+    "import:pa1": "node scripts/import-pa1.mjs"
   },
   "dependencies": {
     "kaplay": "3001.0.19"

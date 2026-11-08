@@ -1,6 +1,6 @@
-// Pixel Adventure 1 ile birebir uyumlu placeholder asset üreteci.
-// Kare sayıları gerçek paketle aynı: idle 11, run 12, jump 1, fall 1, hit 7.
-// Gerçek paket gelince public/assets altındaki PNG'lerin üzerine yazmak yeterli.
+﻿// Pixel Adventure 1 ile birebir uyumlu placeholder asset Ã¼reteci.
+// Kare sayÄ±larÄ± gerÃ§ek paketle aynÄ±: idle 11, run 12, jump 1, fall 1, hit 7.
+// GerÃ§ek paket gelince public/assets altÄ±ndaki PNG'lerin Ã¼zerine yazmak yeterli.
 import { deflateSync } from "node:zlib";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -101,9 +101,9 @@ const C = {
   black: [22, 28, 20, 255],
   stem: [96, 62, 32, 255],
   leaf: [70, 160, 60, 255],
-  dirt: [122, 82, 56, 255],
-  dirtDk: [95, 62, 42, 255],
-  dirtLt: [146, 102, 70, 255],
+  dirt: [98, 66, 46, 255],
+  dirtDk: [78, 50, 36, 255],
+  dirtLt: [118, 80, 56, 255],
   grass: [95, 174, 68, 255],
   grassDk: [63, 122, 46, 255],
   grassLt: [120, 201, 86, 255],
@@ -129,13 +129,13 @@ function drawFrog(c, ox, p = {}) {
     c.rect(ox + fx - 3, 29 + oy, 6, 1, C.bodyLt);
   }
 
-  // gövde
+  // gÃ¶vde
   c.ellipse(ox + 16, 19 + oy, 10, 8.5, C.out);
   c.ellipse(ox + 16, 19 + oy, 9, 7.5, C.body);
   c.ellipse(ox + 14, 16.5 + oy, 5.5, 4, C.bodyLt);
   c.ellipse(ox + 16, 22.5 + oy, 6, 3.5, C.belly);
 
-  // gözler
+  // gÃ¶zler
   for (const ex of [10, 22]) {
     c.ellipse(ox + ex, 8.5 + oy, 4.6, 4.6, C.out);
     c.ellipse(ox + ex, 8.5 + oy, 3.8, 3.8, C.white);
@@ -152,7 +152,7 @@ function drawFrog(c, ox, p = {}) {
     c.ellipse(ox + 23 + pupil, 9 + oy, 1.9, 2.3, C.black);
   }
 
-  // burun + ağız
+  // burun + aÄŸÄ±z
   c.px(ox + 14, 13 + oy, C.out);
   c.px(ox + 18, 13 + oy, C.out);
   c.rect(ox + 14, 16 + oy, 4, 1, C.out);
@@ -337,10 +337,10 @@ const lerp = (a, b, t) => a + (b - a) * t;
     const t = y / h;
     c.rect(0, y, w, 1, [lerp(top[0], bot[0], t), lerp(top[1], bot[1], t), lerp(top[2], bot[2], t), 255]);
   }
-  // güneş
+  // gÃ¼neÅŸ
   c.ellipse(790, 66, 46, 46, [255, 248, 198, 120]);
   c.ellipse(790, 66, 32, 32, [255, 246, 176, 255]);
-  // uzak dağlar
+  // uzak daÄŸlar
   for (const [x, tip, base, hw, col] of [
     [120, 130, 300, 130, [126, 170, 184, 255]],
     [330, 96, 300, 150, [112, 158, 176, 255]],
@@ -375,12 +375,12 @@ const lerp = (a, b, t) => a + (b - a) * t;
   const c = new Canvas(w, h);
   // tepeler
   for (const [x, y, rx, ry, col] of [
-    [140, 356, 250, 150, [70, 132, 76, 255]],
-    [420, 366, 300, 175, [60, 118, 66, 255]],
-    [740, 352, 260, 140, [70, 132, 76, 255]],
-    [900, 370, 220, 150, [60, 118, 66, 255]],
+    [140, 356, 250, 150, [74, 128, 104, 255]],
+    [420, 366, 300, 175, [61, 112, 90, 255]],
+    [740, 352, 260, 140, [74, 128, 104, 255]],
+    [900, 370, 220, 150, [61, 112, 90, 255]],
   ]) c.ellipse(x, y, rx, ry, col);
-  // çalılar
+  // Ã§alÄ±lar
   for (const [x, y, s] of [
     [60, 300, 1],
     [250, 312, 0.8],
@@ -391,7 +391,7 @@ const lerp = (a, b, t) => a + (b - a) * t;
       [0, 0, 26],
       [22, 6, 18],
       [-22, 8, 16],
-    ]) c.ellipse(x + dx * s, y + dy * s, r * s, r * s * 0.8, [52, 104, 58, 255]);
+    ]) c.ellipse(x + dx * s, y + dy * s, r * s, r * s * 0.8, [48, 94, 78, 255]);
   }
   c.save(join(OUT, "bg", "hills.png"));
 }
@@ -467,4 +467,5 @@ wav(join(OUT, "sfx", "death.wav"), (s, rate) => {
   }
 });
 
-console.log("\nAsset üretimi tamam.");
+console.log("\nAsset Ã¼retimi tamam.");
+

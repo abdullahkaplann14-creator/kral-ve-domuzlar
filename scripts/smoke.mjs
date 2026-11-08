@@ -19,9 +19,9 @@ const chrome = spawn(
     "--no-default-browser-check",
     "--autoplay-policy=no-user-gesture-required",
     "--enable-unsafe-swiftshader",
-    "--use-gl=swiftshader",
+    "--use-angle=swiftshader",
     "--window-size=1100,760",
-    "--user-data-dir=" + process.env.TEMP + "\\opencode\\chrome-smoke",
+    "--user-data-dir=" + process.env.TEMP + "\\opencode\\chrome-smoke-" + process.pid,
     "about:blank",
   ],
   { stdio: "ignore", detached: false },
@@ -153,6 +153,7 @@ const state = await evalJS(`(() => {
 console.log("oyun:", state);
 console.log("hareket:", startX, "->", JSON.parse(state).playerX);
 
+await sleep(400);
 const shot = await send("Page.captureScreenshot", { format: "png" });
 mkdirSync("screenshots", { recursive: true });
 writeFileSync(OUT, Buffer.from(shot.data, "base64"));

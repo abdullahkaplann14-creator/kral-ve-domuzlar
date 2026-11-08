@@ -13,8 +13,10 @@ const TILE = 32;
 const SPEED = 230;
 const JUMP_FORCE = 660;
 const MAX_HEARTS = 3;
+const ZOOM = 1.5;
 
 setGravity(2000);
+setCamScale(ZOOM);
 
 /* ------------------------------ assetler ------------------------------ */
 const strip = (tex, path, frames, anims) =>
@@ -66,6 +68,7 @@ const MAP = [
 const COLS = MAP[0].length;
 const ROWS = MAP.length;
 const WORLD_W = COLS * TILE;
+const WORLD_H = ROWS * TILE;
 
 const at = (x, y) => (y < 0 || y >= ROWS || x < 0 || x >= COLS ? " " : MAP[y][x]);
 
@@ -91,10 +94,10 @@ scene("game", () => {
   const bg = add([sprite("bg", { width: 960, height: 360 }), pos(0, 0), z(-100)]);
   const hills = add([sprite("hills", { width: 960, height: 360 }), pos(0, 0), z(-90)]);
   bg.onUpdate(() => {
-    bg.pos.x = getCamPos().x * 0.5 - 160;
+    bg.pos.x = getCamPos().x * 0.5 - 107;
   });
   hills.onUpdate(() => {
-    hills.pos.x = getCamPos().x * 0.75 - 240;
+    hills.pos.x = getCamPos().x * 0.75 - 160;
   });
 
   /* ---- level uretimi ---- */
@@ -155,9 +158,16 @@ scene("game", () => {
     "player",
   ]);
 
+  const HALF_W = width() / 2 / ZOOM;
+  const HALF_H = height() / 2 / ZOOM;
+  setCamPos(HALF_W, 212);
+
   player.onUpdate(() => {
-    const cx = Math.max(width() / 2, Math.min(WORLD_W - width() / 2, player.pos.x + 40));
-    setCamPos(cx, height() / 2);
+    const cam = getCamPos();
+    const tx = Math.max(HALF_W, Math.min(WORLD_W - HALF_W, player.pos.x + 40));
+    const ty = Math.max(HALF_H, Math.min(WORLD_H - HALF_H, player.pos.y + 24));
+    const k = 1 - Math.exp(-10 * dt());
+    setCamPos(cam.x + (tx - cam.x) * k, cam.y + (ty - cam.y) * k);
   });
 
   /* ---- animasyon ---- */
