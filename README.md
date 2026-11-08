@@ -3,6 +3,8 @@
 60 dakikalık 2D Agent Game Jam için **Kral ve Domuzlar**: kale platformer / brawler.
 Motor KAPLAY 3001.x, dahili fizik; harici fizik kütüphanesi yok.
 
+**Canlı demo:** https://abdullahkaplann14-creator.github.io/kral-ve-domuzlar/
+
 ![Oyun içi](docs/screenshot-room1.png)
 
 <details>
