@@ -195,8 +195,14 @@ const startGame = () => {
 
 /* --------------------------------- menu -------------------------------- */
 scene("menu", () => {
-  add([sprite("bg", { width: 1280, height: 360 }), pos(0, -40), z(-100)]);
-  add([rect(width(), height(), rgb(14, 10, 22)), pos(0, 0), opacity(0.55), z(-50)]);
+  add([sprite("bg", { width: 1280, height: 360 }), pos(0, 0), z(-100)]);
+  add([
+    rect(width(), height()),
+    pos(0, 0),
+    color(14, 10, 22),
+    opacity(0.55),
+    z(-50),
+  ]);
   add([text("KRAL VE DOMUZLAR", { size: 36 }), pos(width() / 2, 96), anchor("center"), z(10)]);
   add([text("Kale domuzlardan temizlenmeli.", { size: 13 }), pos(width() / 2, 142), anchor("center"), z(10)]);
   add([text("A / D veya OK  =  yuru", { size: 12 }), pos(width() / 2, 186), anchor("center"), z(10)]);
@@ -444,7 +450,8 @@ scene("game", () => {
       const a = (Math.PI * 2 * i) / 10;
       add([
         pos(p.clone()),
-        rect(3, 3, rgb(col[0], col[1], col[2])),
+        rect(3, 3),
+        color(col[0], col[1], col[2]),
         move(vec2(Math.cos(a), Math.sin(a)), 110 + (i % 3) * 40),
         opacity(1),
         lifespan(0.35, { fade: 0.2 }),
@@ -457,7 +464,8 @@ scene("game", () => {
     for (let i = 0; i < 6; i++) {
       add([
         pos(p.clone()),
-        rect(3, 3, rgb(150, 120, 160)),
+        rect(3, 3),
+        color(150, 120, 160),
         move(vec2(i % 2 ? 1 : -1, -0.4), 50 + i * 10),
         opacity(1),
         lifespan(0.25, { fade: 0.15 }),
@@ -656,7 +664,7 @@ scene("game", () => {
 
 /* ------------------------------ game over ------------------------------ */
 scene("gameover", (score = 0) => {
-  add([rect(width(), height(), rgb(14, 10, 22)), pos(0, 0)]);
+  add([rect(width(), height()), pos(0, 0), color(14, 10, 22)]);
   add([text("KRAL DUSTU", { size: 34 }), pos(width() / 2, 110), anchor("center")]);
   add([text("Toplanan altin: " + score, { size: 16 }), pos(width() / 2, 164), anchor("center")]);
   add([text("SPACE = tekrar dene", { size: 14 }), pos(width() / 2, 232), anchor("center")]);
@@ -665,7 +673,7 @@ scene("gameover", (score = 0) => {
 
 /* --------------------------------- kazandi ------------------------------ */
 scene("win", (score = 0) => {
-  add([rect(width(), height(), rgb(14, 10, 22)), pos(0, 0)]);
+  add([rect(width(), height()), pos(0, 0), color(14, 10, 22)]);
   add([text("KALE TEMIZLENDI!", { size: 30 }), pos(width() / 2, 104), anchor("center")]);
   add([text("Toplanan altin: " + score, { size: 16 }), pos(width() / 2, 156), anchor("center")]);
   add([text("SPACE = bastan oyna", { size: 14 }), pos(width() / 2, 226), anchor("center")]);

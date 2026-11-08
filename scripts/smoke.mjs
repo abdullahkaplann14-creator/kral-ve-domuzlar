@@ -141,6 +141,9 @@ const dump = async () =>
 
 console.log("menu:", JSON.stringify(await dump()));
 
+const menuShot = await send("Page.captureScreenshot", { format: "png" });
+writeFileSync(OUT.replace(/\.png$/, "-menu.png"), Buffer.from(menuShot.data, "base64"));
+
 // menuden oyuna gec
 await tap(" ", "Space", 32, " ");
 await sleep(900);
@@ -164,6 +167,21 @@ const shot = await send("Page.captureScreenshot", { format: "png" });
 mkdirSync("screenshots", { recursive: true });
 writeFileSync(OUT, Buffer.from(shot.data, "base64"));
 console.log("ekran goruntusu:", OUT);
+
+// --- ziplama testi (space basili tutulur) ---
+await evalJS(`window.__dbg.teleport(64, 244)`);
+await sleep(500);
+const y0 = await evalJS(`Math.round(get("player")[0].pos.y)`);
+await key("keyDown", " ", "Space", 32, " ");
+let minY = y0;
+for (let i = 0; i < 14; i++) {
+  await sleep(50);
+  const y = await evalJS(`Math.round(get("player")[0].pos.y)`);
+  if (y < minY) minY = y;
+}
+await key("keyUp", " ", "Space", 32);
+await sleep(500);
+console.log(`ziplama: ${y0} -> ${minY} (${y0 - minY}px yukseklik)`);
 
 // --- kilic testi: oyuncuyu domuzun yanina koy, kilici dogrudan calistir ---
 const before = await dump();
