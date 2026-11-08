@@ -1,6 +1,5 @@
-﻿// Pixel Adventure 1 ile birebir uyumlu placeholder asset Ã¼reteci.
-// Kare sayÄ±larÄ± gerÃ§ek paketle aynÄ±: idle 11, run 12, jump 1, fall 1, hit 7.
-// GerÃ§ek paket gelince public/assets altÄ±ndaki PNG'lerin Ã¼zerine yazmak yeterli.
+﻿// Kings and Pigs paletinde castle tile + arka plan + sfx uretir.
+// (PA1 placeholder'lari artik uretilmiyor; gerekirse npm run import:pa1 kullanilir.)
 import { deflateSync } from "node:zlib";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -34,8 +33,8 @@ const encodePNG = (w, h, rgba) => {
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(w, 0);
   ihdr.writeUInt32BE(h, 4);
-  ihdr[8] = 8; // bit depth
-  ihdr[9] = 6; // RGBA
+  ihdr[8] = 8;
+  ihdr[9] = 6;
   return Buffer.concat([
     Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
     chunk("IHDR", ihdr),
@@ -89,314 +88,148 @@ class Canvas {
 
 let seed = 20261108;
 const rnd = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296);
-const pick = (a) => a[Math.floor(rnd() * a.length)];
 
-/* -------------------------------- palet -------------------------------- */
-const C = {
-  out: [31, 58, 24, 255],
-  body: [79, 155, 54, 255],
-  bodyLt: [108, 192, 74, 255],
-  belly: [216, 238, 174, 255],
-  white: [255, 255, 255, 255],
-  black: [22, 28, 20, 255],
-  stem: [96, 62, 32, 255],
-  leaf: [70, 160, 60, 255],
-  dirt: [98, 66, 46, 255],
-  dirtDk: [78, 50, 36, 255],
-  dirtLt: [118, 80, 56, 255],
-  grass: [95, 174, 68, 255],
-  grassDk: [63, 122, 46, 255],
-  grassLt: [120, 201, 86, 255],
-  stone: [90, 100, 114, 255],
-  stoneLt: [142, 160, 180, 255],
-  stoneDk: [62, 70, 82, 255],
-  spike: [176, 186, 198, 255],
-  spikeDk: [108, 118, 132, 255],
+/* ------------------------- Kings and Pigs paleti ------------------------ */
+const P = {
+  mortar: [52, 38, 56, 255],
+  brick: [198, 122, 114, 255],
+  brickLt: [232, 162, 143, 255],
+  brickDk: [156, 88, 84, 255],
+  stone: [126, 100, 132, 255],
+  stoneLt: [168, 140, 172, 255],
+  stoneDk: [88, 66, 96, 255],
+  deep: [40, 30, 48, 255],
+  sky: [26, 36, 66, 255],
+  skyLt: [44, 62, 104, 255],
+  moon: [240, 232, 200, 255],
+  flame: [255, 176, 72, 255],
+  flameLt: [255, 232, 150, 255],
 };
 
-/* -------------------------------- frog --------------------------------- */
-function drawFrog(c, ox, p = {}) {
-  const { bob = 0, legA = 0, legB = 0, pupil = 1, dead = false } = p;
-  const oy = bob;
-
-  // arka ayaklar
-  for (const [fx, fl] of [
-    [10 + legA, 1],
-    [22 + legB, -1],
-  ]) {
-    c.ellipse(ox + fx, 28 + oy, 4.5, 3, C.out);
-    c.ellipse(ox + fx, 28 + oy, 3.5, 2.2, C.body);
-    c.rect(ox + fx - 3, 29 + oy, 6, 1, C.bodyLt);
-  }
-
-  // gÃ¶vde
-  c.ellipse(ox + 16, 19 + oy, 10, 8.5, C.out);
-  c.ellipse(ox + 16, 19 + oy, 9, 7.5, C.body);
-  c.ellipse(ox + 14, 16.5 + oy, 5.5, 4, C.bodyLt);
-  c.ellipse(ox + 16, 22.5 + oy, 6, 3.5, C.belly);
-
-  // gÃ¶zler
-  for (const ex of [10, 22]) {
-    c.ellipse(ox + ex, 8.5 + oy, 4.6, 4.6, C.out);
-    c.ellipse(ox + ex, 8.5 + oy, 3.8, 3.8, C.white);
-  }
-  if (dead) {
-    for (const ex of [10, 22]) {
-      for (let i = -2; i <= 2; i++) {
-        c.px(ox + ex + i, 8 + oy + i, C.black);
-        c.px(ox + ex + i, 8 + oy - i, C.black);
-      }
+/* ------------------------------- brick yardimcisi ---------------------- */
+function bricks(c, x0, y0, w, h, base, lt, dk, mortar, bw = 16, bh = 8) {
+  c.rect(x0, y0, w, h, mortar);
+  for (let row = 0, y = y0; y < y0 + h; row++, y += bh) {
+    const off = (row % 2) * (bw / 2);
+    for (let x = x0 - bw + off; x < x0 + w; x += bw) {
+      c.rect(x + 1, y + 1, bw - 2, bh - 2, base);
+      c.rect(x + 1, y + 1, bw - 2, 1, lt);
+      c.rect(x + 1, y + bh - 2, bw - 2, 1, dk);
     }
-  } else {
-    c.ellipse(ox + 11 + pupil, 9 + oy, 1.9, 2.3, C.black);
-    c.ellipse(ox + 23 + pupil, 9 + oy, 1.9, 2.3, C.black);
   }
-
-  // burun + aÄŸÄ±z
-  c.px(ox + 14, 13 + oy, C.out);
-  c.px(ox + 18, 13 + oy, C.out);
-  c.rect(ox + 14, 16 + oy, 4, 1, C.out);
 }
 
-const makeFrogStrip = (frames, path, pose) => {
-  const c = new Canvas(32 * frames, 32);
-  for (let i = 0; i < frames; i++) drawFrog(c, i * 32, pose(i, frames));
-  c.save(join(OUT, path));
-};
-
-makeFrogStrip(11, "frog/idle.png", (i, n) => ({
-  bob: [0, -1, -1, 0, 0, 1, 1, 0][i % 8],
-  legA: 0,
-  legB: 0,
-  pupil: 1,
-}));
-
-makeFrogStrip(12, "frog/run.png", (i, n) => {
-  const s = Math.sin((i / n) * Math.PI * 2);
-  return { bob: -Math.abs(s) > 0.5 ? -1 : 0, legA: Math.round(s * 3), legB: -Math.round(s * 3), pupil: 1 };
-});
-
-makeFrogStrip(1, "frog/jump.png", () => ({ bob: -1, legA: -2, legB: 2, pupil: 1 }));
-makeFrogStrip(1, "frog/fall.png", () => ({ bob: 1, legA: 2, legB: -2, pupil: 1 }));
-
-makeFrogStrip(7, "frog/hit.png", (i) => ({
-  bob: [-1, 1, -1, 1, 0, 0, 0][i],
-  legA: 3,
-  legB: -3,
-  dead: true,
-}));
-
-/* -------------------------------- meyveler ------------------------------ */
-const fruit = (name, draw) => {
-  const c = new Canvas(32, 32);
-  draw(c);
-  c.save(join(OUT, "fruits", `${name}.png`));
-};
-
-fruit("apple", (c) => {
-  c.ellipse(16, 19, 9.5, 9, [150, 26, 26, 255]);
-  c.ellipse(16, 19, 8.5, 8, [214, 46, 46, 255]);
-  c.ellipse(12, 15, 3.2, 2.2, [255, 130, 120, 255]);
-  c.rect(15, 6, 2, 6, C.stem);
-  c.ellipse(21, 7.5, 4, 2.4, C.leaf);
-});
-
-fruit("banana", (c) => {
-  for (let t = 0; t <= 1; t += 0.01) {
-    const x = 7 + t * 18;
-    const y = 8 + Math.sin(t * Math.PI) * 14;
-    c.ellipse(x, y, 3, 3, [214, 168, 40, 255]);
-    c.ellipse(x, y - 0.6, 2.4, 2.4, [255, 224, 102, 255]);
-  }
-  c.ellipse(7, 8, 2.4, 2.4, C.stem);
-});
-
-fruit("cherries", (c) => {
-  c.rect(15, 6, 1, 12, [88, 132, 44, 255]);
-  c.rect(11, 13, 1, 6, [88, 132, 44, 255]);
-  c.rect(20, 12, 1, 7, [88, 132, 44, 255]);
-  c.ellipse(16, 6, 4, 2, C.leaf);
-  c.ellipse(11, 21, 6, 6, [140, 22, 34, 255]);
-  c.ellipse(21, 21, 6, 6, [140, 22, 34, 255]);
-  c.ellipse(11, 21, 5, 5, [214, 44, 62, 255]);
-  c.ellipse(21, 21, 5, 5, [214, 44, 62, 255]);
-  c.ellipse(9, 19, 1.8, 1.4, [255, 140, 150, 255]);
-});
-
-fruit("kiwi", (c) => {
-  c.ellipse(16, 17, 10, 10, [120, 88, 48, 255]);
-  c.ellipse(16, 17, 8.6, 8.6, [138, 186, 62, 255]);
-  c.ellipse(16, 17, 4, 4, [240, 246, 210, 255]);
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2;
-    c.ellipse(16 + Math.cos(a) * 6, 17 + Math.sin(a) * 6, 0.8, 1.6, C.black);
-  }
-});
-
-fruit("melon", (c) => {
-  c.ellipse(16, 17, 10, 10, [56, 108, 36, 255]);
-  c.ellipse(16, 17, 8.6, 8.6, [108, 190, 74, 255]);
-  for (const dx of [-5, -1.5, 2, 5.5]) {
-    for (let y = 9; y < 26; y++) {
-      const h = Math.sqrt(Math.max(0, 1 - ((y - 17) / 9) ** 2));
-      if (Math.abs(dx) < h * 8) c.px(16 + dx, y, [72, 148, 56, 255]);
-    }
-  }
-});
-
-fruit("orange", (c) => {
-  c.ellipse(16, 18, 9.5, 9.5, [190, 96, 16, 255]);
-  c.ellipse(16, 18, 8.5, 8.5, [240, 148, 34, 255]);
-  c.ellipse(12, 14, 3, 2.2, [255, 198, 96, 255]);
-  for (let i = 0; i < 9; i++) c.px(9 + rnd() * 14, 11 + rnd() * 14, [214, 118, 20, 255]);
-  c.ellipse(20, 7, 3.4, 2, C.leaf);
-});
-
-fruit("pineapple", (c) => {
-  c.ellipse(16, 20, 8, 9.5, [190, 132, 26, 255]);
-  c.ellipse(16, 20, 7, 8.5, [242, 186, 64, 255]);
-  for (let y = 12; y < 29; y += 3) {
-    for (let x = 10; x < 23; x += 3) c.px(x + ((y / 3) % 2), y, [190, 132, 26, 255]);
-  }
-  for (const dx of [-6, -2, 2, 6]) c.tri(16 + dx, 3 + Math.abs(dx) * 0.6, 13, 2.4, [72, 160, 70, 255]);
-});
-
-fruit("strawberry", (c) => {
-  c.ellipse(16, 15, 9, 8, [190, 30, 44, 255]);
-  c.tri(16, 16, 29, 8, [190, 30, 44, 255]);
-  c.ellipse(16, 15, 8, 7, [224, 58, 66, 255]);
-  c.tri(16, 16, 28, 7, [224, 58, 66, 255]);
-  c.ellipse(12, 12, 3, 2, [255, 140, 140, 255]);
-  for (let i = 0; i < 12; i++) c.px(10 + rnd() * 12, 12 + rnd() * 14, [255, 226, 120, 255]);
-  for (const dx of [-6, -2, 2, 6]) c.tri(16 + dx, 4, 9, 2.2, [72, 160, 70, 255]);
-});
-
-/* -------------------------------- zemin -------------------------------- */
+/* --------------------------------- tiles -------------------------------- */
 {
   const c = new Canvas(32, 32);
-  c.rect(0, 0, 32, 32, C.dirt);
-  for (let i = 0; i < 26; i++) {
-    const x = rnd() * 31;
-    const y = 10 + rnd() * 21;
-    c.rect(x, y, 2, 2, rnd() > 0.5 ? C.dirtDk : C.dirtLt);
-  }
-  c.rect(0, 0, 32, 9, C.grass);
-  c.rect(0, 8, 32, 2, C.grassDk);
-  for (let x = 0; x < 32; x++) {
-    const h = 3 + Math.round(rnd() * 3);
-    c.rect(x, 9 - h, 1, h, C.grassLt);
-  }
+  bricks(c, 0, 6, 32, 26, P.brick, P.brickLt, P.brickDk, P.mortar);
+  c.rect(0, 0, 32, 6, P.stone);
+  c.rect(0, 0, 32, 2, P.stoneLt);
+  c.rect(0, 5, 32, 2, P.stoneDk);
+  for (let x = 0; x < 32; x += 16) c.rect(x, 0, 1, 6, P.stoneDk);
   c.save(join(OUT, "ground.png"));
 }
 
 {
   const c = new Canvas(32, 32);
-  c.rect(0, 0, 32, 32, C.dirt);
-  for (let i = 0; i < 34; i++) {
-    const x = rnd() * 31;
-    const y = rnd() * 31;
-    c.rect(x, y, 2, 2, rnd() > 0.5 ? C.dirtDk : C.dirtLt);
-  }
+  bricks(c, 0, 0, 32, 32, [118, 68, 68, 255], [150, 92, 86, 255], P.mortar, P.deep);
+  for (let i = 0; i < 10; i++) c.rect(rnd() * 30, rnd() * 30, 2, 2, P.mortar);
   c.save(join(OUT, "dirt.png"));
 }
 
 {
   const c = new Canvas(32, 32);
-  c.rect(0, 0, 32, 32, C.stoneDk);
-  c.rect(0, 0, 32, 12, C.stone);
-  c.rect(0, 0, 32, 4, C.grass);
-  c.rect(0, 3, 32, 1, C.grassDk);
-  for (let x = 0; x < 32; x += 7) c.rect(x, 5, 1, 7, C.stoneDk);
-  c.rect(0, 12, 32, 2, C.stoneLt);
-  for (let i = 0; i < 10; i++) c.rect(rnd() * 30, 15 + rnd() * 15, 3, 2, C.stone);
+  c.rect(0, 0, 32, 32, P.deep);
+  c.rect(0, 0, 32, 12, P.stone);
+  c.rect(0, 0, 32, 3, P.stoneLt);
+  c.rect(0, 10, 32, 3, P.stoneDk);
+  bricks(c, 4, 15, 24, 16, P.brickDk, P.brick, P.mortar, P.deep, 12, 8);
   c.save(join(OUT, "platform.png"));
 }
 
 {
   const c = new Canvas(32, 32);
   for (const cx of [6, 16, 26]) {
-    c.tri(cx, 7, 28, 6.4, [38, 44, 56, 255]);
-    c.tri(cx, 9, 28, 5.2, C.spike);
-    c.tri(cx, 9, 28, 2, C.spikeDk);
+    c.tri(cx, 6, 27, 6.4, [30, 24, 38, 255]);
+    c.tri(cx, 8, 27, 5, [198, 202, 216, 255]);
+    c.tri(cx, 8, 27, 2, [128, 134, 152, 255]);
   }
-  c.rect(0, 28, 32, 4, [58, 40, 44, 255]);
-  c.rect(0, 28, 32, 1, [158, 74, 74, 255]);
+  c.rect(0, 27, 32, 5, [44, 34, 52, 255]);
+  c.rect(0, 27, 32, 1, [92, 76, 104, 255]);
   c.save(join(OUT, "spike.png"));
 }
 
-/* ------------------------------ arka plan ------------------------------ */
-const lerp = (a, b, t) => a + (b - a) * t;
-
+/* ------------------------------ arka plan ------------------------------- */
 {
-  const w = 960;
+  const w = 1280;
   const h = 360;
   const c = new Canvas(w, h);
-  const top = [95, 184, 232];
-  const bot = [214, 240, 255];
   for (let y = 0; y < h; y++) {
     const t = y / h;
-    c.rect(0, y, w, 1, [lerp(top[0], bot[0], t), lerp(top[1], bot[1], t), lerp(top[2], bot[2], t), 255]);
+    c.rect(0, y, w, 1, [
+      Math.round(30 + t * 18),
+      Math.round(22 + t * 12),
+      Math.round(40 + t * 16),
+      255,
+    ]);
   }
-  // gÃ¼neÅŸ
-  c.ellipse(790, 66, 46, 46, [255, 248, 198, 120]);
-  c.ellipse(790, 66, 32, 32, [255, 246, 176, 255]);
-  // uzak daÄŸlar
-  for (const [x, tip, base, hw, col] of [
-    [120, 130, 300, 130, [126, 170, 184, 255]],
-    [330, 96, 300, 150, [112, 158, 176, 255]],
-    [600, 138, 300, 120, [126, 170, 184, 255]],
-    [860, 112, 300, 140, [112, 158, 176, 255]],
-  ]) {
-    c.tri(x, tip, base, hw, col);
-    c.tri(x, tip, tip + 40, Math.round(hw * 0.28), [232, 244, 250, 255]);
-  }
-  // bulutlar
-  for (const [x, y, s] of [
-    [90, 60, 1],
-    [380, 40, 0.8],
-    [640, 96, 1.15],
-    [880, 150, 0.7],
-  ]) {
-    for (const [dx, dy, r] of [
-      [0, 0, 20],
-      [22, 4, 15],
-      [-22, 6, 13],
-      [10, -10, 14],
-    ]) {
-      c.ellipse(x + dx * s, y + dy * s, r * s, r * s * 0.85, [255, 255, 255, 235]);
+  // soluk tugla dokusu
+  for (let row = 0, y = 0; y < h; row++, y += 16) {
+    const off = (row % 2) * 16;
+    for (let x = -32 + off; x < w; x += 32) {
+      c.rect(x + 1, y + 1, 30, 1, [42, 32, 52, 255]);
+      c.rect(x + 1, y + 14, 30, 1, [34, 26, 44, 255]);
     }
   }
-  c.save(join(OUT, "bg", "blue.png"));
+  // kemerli pencereler
+  for (const [cx, top, ww, hh] of [
+    [150, 60, 90, 170],
+    [470, 46, 104, 190],
+    [790, 70, 84, 160],
+    [1080, 56, 96, 176],
+  ]) {
+    const x = cx - ww / 2;
+    const r = ww / 2;
+    // pencere govdesi
+    c.ellipse(cx, top + r, r, r, P.sky);
+    c.rect(x, top + r, ww, hh - r, P.sky);
+    // ay
+    c.ellipse(cx + ww * 0.16, top + r * 0.9, r * 0.34, r * 0.34, P.moon);
+    c.ellipse(cx + ww * 0.22, top + r * 0.82, r * 0.3, r * 0.3, P.sky);
+    // yildizlar
+    for (let i = 0; i < 9; i++) {
+      c.rect(x + 10 + rnd() * (ww - 20), top + 14 + rnd() * (hh * 0.5), 2, 2, [180, 200, 240, 255]);
+    }
+    // tugla cerceve
+    c.ellipse(cx, top + r, r + 6, r + 6, [0, 0, 0, 0]);
+    for (let a = 0; a <= 180; a += 3) {
+      const rad = (a * Math.PI) / 180;
+      c.ellipse(cx + Math.cos(rad) * (r + 3), top + r - Math.sin(rad) * (r + 3), 4, 4, P.stoneDk);
+    }
+    c.rect(x - 6, top + r, 6, hh - r, P.stoneDk);
+    c.rect(x + ww, top + r, 6, hh - r, P.stoneDk);
+    c.rect(x - 6, top + hh - 6, ww + 12, 6, P.stoneDk);
+  }
+  c.save(join(OUT, "bg", "castle.png"));
 }
 
 {
-  const w = 960;
+  const w = 1280;
   const h = 360;
   const c = new Canvas(w, h);
-  // tepeler
-  for (const [x, y, rx, ry, col] of [
-    [140, 356, 250, 150, [74, 128, 104, 255]],
-    [420, 366, 300, 175, [61, 112, 90, 255]],
-    [740, 352, 260, 140, [74, 128, 104, 255]],
-    [900, 370, 220, 150, [61, 112, 90, 255]],
-  ]) c.ellipse(x, y, rx, ry, col);
-  // Ã§alÄ±lar
-  for (const [x, y, s] of [
-    [60, 300, 1],
-    [250, 312, 0.8],
-    [520, 296, 1.1],
-    [820, 306, 0.9],
-  ]) {
-    for (const [dx, dy, r] of [
-      [0, 0, 26],
-      [22, 6, 18],
-      [-22, 8, 16],
-    ]) c.ellipse(x + dx * s, y + dy * s, r * s, r * s * 0.8, [48, 94, 78, 255]);
+  for (const x of [110, 380, 640, 940, 1180]) {
+    c.rect(x - 26, 26, 52, 12, P.stoneDk);
+    c.rect(x - 26, 26, 52, 3, P.stone);
+    c.rect(x - 20, 38, 40, 322, [56, 42, 66, 255]);
+    c.rect(x - 20, 38, 8, 322, [76, 58, 88, 255]);
+    c.rect(x + 12, 38, 8, 322, [42, 32, 52, 255]);
+    for (let y = 60; y < 340; y += 40) c.rect(x - 20, y, 40, 2, [46, 34, 58, 255]);
+    c.rect(x - 26, 340, 52, 20, P.stoneDk);
   }
-  c.save(join(OUT, "bg", "hills.png"));
+  c.save(join(OUT, "bg", "pillars.png"));
 }
 
-/* --------------------------------- ses --------------------------------- */
+/* ---------------------------------- ses --------------------------------- */
 const RATE = 22050;
 const wav = (path, make) => {
   const n = Math.floor(RATE * 0.8);
@@ -428,32 +261,48 @@ const wav = (path, make) => {
 const square = (phase) => (phase % 1 < 0.5 ? 1 : -1);
 
 wav(join(OUT, "sfx", "jump.wav"), (s, rate) => {
-  const dur = 0.17;
+  const dur = 0.16;
   for (let i = 0; i < rate * dur; i++) {
     const t = i / rate;
-    const f = 300 + 900 * (t / dur);
-    const env = 1 - t / dur;
-    s[i] = square(t * f) * 0.28 * env;
+    const f = 260 + 520 * (t / dur);
+    s[i] = square(t * f) * 0.26 * (1 - t / dur);
   }
 });
 
 wav(join(OUT, "sfx", "coin.wav"), (s, rate) => {
-  const dur = 0.24;
+  const dur = 0.22;
   for (let i = 0; i < rate * dur; i++) {
     const t = i / rate;
-    const f = t < 0.08 ? 988 : 1319;
-    const env = Math.max(0, 1 - t / dur) ** 1.6;
-    s[i] = (square(t * f) * 0.6 + Math.sin(2 * Math.PI * t * f * 2) * 0.4) * 0.22 * env;
+    const f = t < 0.07 ? 1046 : 1568;
+    const env = Math.max(0, 1 - t / dur) ** 1.5;
+    s[i] = (square(t * f) * 0.55 + Math.sin(2 * Math.PI * t * f * 2) * 0.45) * 0.22 * env;
   }
 });
 
 wav(join(OUT, "sfx", "hit.wav"), (s, rate) => {
-  const dur = 0.3;
+  const dur = 0.28;
   for (let i = 0; i < rate * dur; i++) {
     const t = i / rate;
-    const f = 320 * Math.exp(-t * 9) + 60;
-    const env = Math.exp(-t * 7);
-    s[i] = (Math.sin(2 * Math.PI * t * f) * 0.7 + (rnd() * 2 - 1) * 0.5) * 0.32 * env;
+    const f = 300 * Math.exp(-t * 9) + 55;
+    s[i] = (Math.sin(2 * Math.PI * t * f) * 0.7 + (rnd() * 2 - 1) * 0.5) * 0.3 * Math.exp(-t * 7);
+  }
+});
+
+wav(join(OUT, "sfx", "slash.wav"), (s, rate) => {
+  const dur = 0.16;
+  for (let i = 0; i < rate * dur; i++) {
+    const t = i / rate;
+    const n = rnd() * 2 - 1;
+    s[i] = (n * 0.6 + Math.sin(2 * Math.PI * t * (900 - 2600 * t)) * 0.4) * 0.3 * (1 - t / dur);
+  }
+});
+
+wav(join(OUT, "sfx", "stomp.wav"), (s, rate) => {
+  const dur = 0.18;
+  for (let i = 0; i < rate * dur; i++) {
+    const t = i / rate;
+    const f = 180 * Math.exp(-t * 12) + 40;
+    s[i] = Math.sin(2 * Math.PI * t * f) * 0.4 * Math.exp(-t * 9);
   }
 });
 
@@ -461,11 +310,12 @@ wav(join(OUT, "sfx", "death.wav"), (s, rate) => {
   const dur = 0.7;
   for (let i = 0; i < rate * dur; i++) {
     const t = i / rate;
-    const f = 520 * Math.exp(-t * 4) + 45;
-    const env = 1 - t / dur;
-    s[i] = (square(t * f) * 0.5 + Math.sin(2 * Math.PI * t * f * 0.5) * 0.5) * 0.3 * env;
+    const f = 480 * Math.exp(-t * 4) + 45;
+    s[i] = (square(t * f) * 0.5 + Math.sin(2 * Math.PI * t * f * 0.5) * 0.5) * 0.28 * (1 - t / dur);
   }
 });
 
-console.log("\nAsset Ã¼retimi tamam.");
+console.log("\nCastle asset uretimi tamam.");
+
+
 

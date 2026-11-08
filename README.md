@@ -1,7 +1,7 @@
-# Meyve Koşusu · KAPLAY
+# Kral ve Domuzlar · KAPLAY
 
-60 dakikalık 2D Agent Game Jam için **Meyve Koşusu** (endless-runner / platformer karışımı).
-Motorda sadece KAPLAY 3001.x ve dahili fizik var; harici fizik kütüphanesi yok.
+60 dakikalık 2D Agent Game Jam için **Kral ve Domuzlar**: kale platformer / brawler.
+Motor KAPLAY 3001.x, dahili fizik; harici fizik kütüphanesi yok.
 
 ## Çalıştırma
 
@@ -10,12 +10,15 @@ npm install
 npm run dev      # http://localhost:5173
 ```
 
-Yeni asset üretmek / yeniden üretmek için:
+Yardımcı komutlar:
 
 ```bash
-npm run assets   # placeholder pixel-art + sfx üretir
-npm run measure  # public/assets içindeki PNG'lerin boyutunu ve kare sayısını listeler
-node scripts/smoke.mjs http://localhost:5199/  # headless Chrome: hata + ekran görüntüsü testi
+npm run assets     # castle tile + arka plan + sfx üretir (deterministik)
+npm run measure    # public/assets PNG boyutlarını / kare sayılarını listeler
+npm run import:kp  # Kings and Pigs ZIP'ini public/assets'e aktarır
+node scripts/smoke.mjs http://localhost:5199/   # headless Chrome testi + ekran görüntüsü
+node scripts/analyze.mjs tiles public/assets/tiles/terrain.png   # tileset ızgarası
+node scripts/analyze.mjs bbox public/assets/king/idle.png 78     # sprite sınırları
 ```
 
 ## Kontroller
@@ -23,68 +26,85 @@ node scripts/smoke.mjs http://localhost:5199/  # headless Chrome: hata + ekran g
 | Tuş | İşlev |
 | --- | --- |
 | `A` / `D` veya `←` / `→` | Yürü |
-| `SPACE` / `↑` | Zıpla (basılı tutarsan daha yükseğe) |
+| `SPACE` / `↑` / `W` | Zıpla (basılı tut = daha yüksek) |
+| `X` / `J` | Kılıç saldırısı |
 | `SPACE` (menü / game over) | Başla / tekrar dene |
 
 ## Mekanikler
 
-1. Yerçekimi + zemin çarpışması
-2. Yürüme
-3. Değişken yükseklikte zıplama (tuşu bırakınca yükseliş kesilir)
-4. Coyote time (zeminden yeni ayrıldıysa hâlâ zıplayabilme)
+1. Yerçekimi + zemin/platform çarpışması
+2. Yürüme + hız
+3. Değişken yükseklikte zıplama
+4. Coyote time (zeminden ayrıldıktan sonra kısa süre zıplayabilme)
 5. Jump buffer (inişten hemen önce basılan zıplama kuyruğa alınır)
-6. Meyve toplama + skor
-7. Diken hasarı + 3 can
-8. Respawn + kısa dokunulmazlık (blink)
-9. Kamera takibi (yatay clamp'li)
-10. Game over + yeniden başlatma
+6. Kılıç saldırısı (menzil içindeki domuzları öldürür)
+7. Stomp (domuzun üstüne atlayınca ezme + zıplama)
+8. Domuz devriye AI (platform sınırları içinde gidip gelme)
+9. Altın toplama + skor
+10. Kalp toplama + can
+11. 3 can/hasar + dokunulmazlık (blink)
+12. Diken hasarı
+13. Oda geçişi (kapı) + iki ayrı oda
+14. Kamera takibi (yumuşak, clamp'li)
 
 ## İçerik puan listesi
 
-Sunumda bu liste sırayla gösterilir (her satır ekranda tetiklenmeli).
+Sunumda bu liste sırayla gösterilir; her satır oyunda tetiklenmeli.
 
 ### Mekanik (+3 / adet)
-- [ ] Yürüme + yerçekimi + zemin
+- [ ] Yürüme + yerçekimi
 - [ ] Değişken yükseklikte zıplama
 - [ ] Coyote time
 - [ ] Jump buffer
-- [ ] Meyve toplama + skor
-- [ ] Diken hasarı + can sistemi
-- [ ] Respawn + dokunulmazlık
+- [ ] Kılıç saldırısı
+- [ ] Stomp
+- [ ] Domuz devriye AI
+- [ ] Altın toplama + skor
+- [ ] Kalp toplama
+- [ ] Hasar + dokunulmazlık
+- [ ] Oda geçişi (kapı)
 
-### Animasyonlu karakter (+2 / adet)
-- [ ] Ninja Frog (oyuncu) — idle / run / jump / fall
+### Animasyonlu karakter / düşman tipi (+2 / adet)
+- [ ] Kral (oyuncu) — idle / run / jump / fall / attack
+- [ ] Domuz — idle / run / dead
+- [ ] Kral Domuz — idle / run / dead
 
 ### Animasyon durumu (+1 / adet)
 - [ ] `idle` (11 kare)
-- [ ] `run` (12 kare)
-- [ ] `jump`
-- [ ] `fall`
-- [ ] `hit` (asset hazır, ölüm animasyonunda kullanılacak)
+- [ ] `run` (8 kare)
+- [ ] `jump` / `fall`
+- [ ] `attack` (3 kare)
+- [ ] düşman `dead` (4 kare)
+- [ ] altın `spin` (8 kare), kalp `beat` (8 kare)
 
-### Level / sahne (+2 / adet)
-- [ ] Ana level (40×10 tile, 1280 px genişlik)
-- [ ] Menü sahnesi
-- [ ] Game over sahnesi
+### Level / oda / sahne (+2 / adet)
+- [ ] Oda 1 — kale avlusu (60×12 tile)
+- [ ] Oda 2 — dikenli çukur + kral domuz
+- [ ] Menü
+- [ ] Game over
+- [ ] Zafer ekranı
 
 ### Parallax katmanı (+1 / adet, 3. katmandan itibaren)
-- [ ] Gökyüzü + dağlar + bulutlar (0.50×)
-- [ ] Tepeler + çalılar (0.75×)
+- [ ] Kale duvarı + pencereler (0.50×)
+- [ ] Sütunlar (0.75×)
 
 ### Juice (+1 / adet)
-- [ ] Meyve toplama parçacıkları
+- [ ] Altın toplama parçacıkları
+- [ ] Düşman ölüm parçacıkları
 - [ ] İniş tozu
-- [ ] Ekran sarsıntısı (hasar)
+- [ ] Ekran sarsıntısı (hasar / stomp)
 - [ ] Hasar sonrası blink
-- [ ] Meyve bob animasyonu
+- [ ] Altın/kalp bob animasyonu
 
 ### UI (+1 / adet)
-- [ ] Can göstergesi
-- [ ] Skor
+- [ ] Can göstergesi (kalp sprite'ları)
+- [ ] Skor (bitmap rakamlar)
+- [ ] Oda sayacı
 - [ ] Başlangıç ekranı
+- [ ] Zafer ekranı
 
-### Ses (+1 / 2 efekt)
-- [ ] `jump`, `coin`, `hit`, `death` (4 efekt = +2)
+### Ses (+1 / 2 efekt, müzik +2)
+- [ ] `jump`, `coin`, `hit`, `slash`, `stomp`, `death` (6 efekt = +3)
 
 ### Twist (+3)
 - [ ] 30. dakikada çekilecek kart (henüz eklenmedi)
@@ -93,33 +113,29 @@ Sunumda bu liste sırayla gösterilir (her satır ekranda tetiklenmeli).
 
 ```text
 index.html
-src/main.js            # tüm oyun
-scripts/gen-assets.mjs # placeholder PNG + WAV üreteci
-scripts/assets.mjs     # PNG boyut / kare sayısı ölçer
+src/main.js              # tüm oyun (tek dosya)
+scripts/gen-assets.mjs   # castle tile + bg + sfx üreteci
+scripts/import-kp.mjs    # Kings and Pigs paketini aktarır
+scripts/assets.mjs       # PNG ölçüm
+scripts/pnglib.mjs       # PNG oku/yaz/kırp (bağımlılıksız)
+scripts/analyze.mjs      # tileset ızgarası / sprite bbox / crop
+scripts/smoke.mjs        # headless Chrome smoke testi
 public/assets/
-  frog/{idle,run,jump,fall,hit}.png
-  fruits/{apple,banana,cherries,kiwi,melon,orange,pineapple,strawberry}.png
-  bg/{blue,hills}.png
+  king/{idle,run,jump,fall,hit,dead,attack,ground}.png   (78x58)
+  pig/{idle,run,jump,fall,hit,dead,attack,ground}.png    (34x28)
+  king_pig/{...}.png                                     (38x28)
+  bomb_pig/{idle,run,picking_bomb,throwing_boom}.png     (26x26)
+  ui/{coin,diamond,heart,live_bar,numbers}.png
+  tiles/{terrain,decor}.png
+  props/{door,door_open,box,bomb,boom,cannon}.png
+  bg/{castle,pillars}.png
   {ground,dirt,platform,spike}.png
-  sfx/{jump,coin,hit,death}.wav
+  sfx/{jump,coin,hit,slash,stomp,death}.wav
 ```
-
-`public/assets` içindeki dosyalar Pixel Adventure 1 ile **aynı isim ve kare sayısına** sahip
-placeholder'lardır (idle 11, run 12, jump 1, fall 1, hit 7). Gerçek paketi indirince aynı
-yollara kopyalamak yeterlidir; kod değişmez.
-
-## Sonraki adımlar (kalan süre)
-
-1. Gerçek Pixel Adventure tile'ları (`Terrain (16x16).png`) ile zemin/platform değişimi
-2. 2. oda + anahtar/kapı veya portal
-3. Çift zıplama + dash
-4. Kings and Pigs domuzları (devriye + bomba atan)
-5. Twist kartı (90 sn geri sayım + süre uzatan meyve)
-6. Slow-mo ölüm, hit flash, kombo sayacı
 
 ## Lisans / Atıf
 
-- Placeholder görseller ve sesler bu depoda kodla üretildi (CC0).
-- Gerçek paketler eklendiğinde: Pixel Adventure 1 — Pixel Frog (ücretsiz), Kings and Pigs (CC0),
-  Treasure Hunters (CC0), Sunny Land — ansimuz (ücretsiz), Kenney (CC0).
-- Ses üretimi için isteğe bağlı `jsfxr` kullanılabilir.
+- Kings and Pigs — Pixel Frog (CC0). Tüm karakter, tile ve UI sprite'ları bu paketten.
+- `bg/`, `ground.png`, `dirt.png`, `platform.png`, `spike.png` ve `sfx/` bu depoda
+  kodla üretildi (CC0), paket paletine uyacak şekilde.
+- Ses üretimi isteğe bağlı olarak `jsfxr` ile değiştirilebilir.

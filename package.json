@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "assets": "node scripts/gen-assets.mjs",
     "measure": "node scripts/assets.mjs",
+    "import:kp": "node scripts/import-kp.mjs",
     "import:pa1": "node scripts/import-pa1.mjs"
   },
   "dependencies": {
