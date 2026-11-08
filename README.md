@@ -3,6 +3,16 @@
 60 dakikalık 2D Agent Game Jam için **Kral ve Domuzlar**: kale platformer / brawler.
 Motor KAPLAY 3001.x, dahili fizik; harici fizik kütüphanesi yok.
 
+![Oyun içi](docs/screenshot-room1.png)
+
+<details>
+<summary>Menü ve Oda 2 ekran görüntüleri</summary>
+
+![Menü](docs/screenshot-menu.png)
+![Oda 2](docs/screenshot-room2.png)
+
+</details>
+
 ## Çalıştırma
 
 ```bash
@@ -135,6 +145,7 @@ public/assets/
 
 ## Lisans / Atıf
 
+- Kod: MIT (`LICENSE`).
 - Kings and Pigs — Pixel Frog (CC0). Tüm karakter, tile ve UI sprite'ları bu paketten.
 - `bg/`, `ground.png`, `dirt.png`, `platform.png`, `spike.png` ve `sfx/` bu depoda
   kodla üretildi (CC0), paket paletine uyacak şekilde.
