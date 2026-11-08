@@ -1,9 +1,9 @@
-node_modules
+﻿node_modules
 dist
 .DS_Store
 *.log
-smoke.png
 screenshots/
 asset-havuzu/
 tmp/
 asset-havuzu/
+smoke*.png
