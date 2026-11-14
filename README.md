@@ -1,7 +1,8 @@
 # Kral ve Domuzlar · KAPLAY
 
-60 dakikalık 2D Agent Game Jam için **Kral ve Domuzlar**: kale platformer / brawler.
-Motor KAPLAY 3001.x, dahili fizik; harici fizik kütüphanesi yok.
+60 dakikalık 2D Agent Game Jam için **Kral ve Domuzlar**: 10 bölümlük kale platformer / brawler.
+Motor KAPLAY 3001.x, dahili fizik; harici fizik kütüphanesi yok. Bölüm ilerledikçe
+çukurlar, dikenler ve domuzlar artar; domuzlar hızlanır.
 
 **Canlı demo:** https://abdullahkaplann14-creator.github.io/kral-ve-domuzlar/
 
@@ -56,8 +57,10 @@ node scripts/analyze.mjs bbox public/assets/king/idle.png 78     # sprite sını
 10. Kalp toplama + can
 11. 3 can/hasar + dokunulmazlık (blink)
 12. Diken hasarı
-13. Oda geçişi (kapı) + iki ayrı oda
-14. Kamera takibi (yumuşak, clamp'li)
+13. **10 bölüm** — her bölümde artan zorluk (çukur, diken, düşman sayısı ve hızı)
+14. Kapı ile bölüm geçişi, skor ve can taşınır
+15. Kamera takibi (yumuşak, clamp'li)
+16. Arka plan müziği (özgün chiptune loop, `M` ile susturma yok — ses seviyeleri dengeli)
 
 ## İçerik puan listesi
 
@@ -90,8 +93,7 @@ Sunumda bu liste sırayla gösterilir; her satır oyunda tetiklenmeli.
 - [ ] altın `spin` (8 kare), kalp `beat` (8 kare)
 
 ### Level / oda / sahne (+2 / adet)
-- [ ] Oda 1 — kale avlusu (60×12 tile)
-- [ ] Oda 2 — dikenli çukur + kral domuz
+- [ ] 10 bölüm (prosedürel, sabit tohumlu — her oyunda aynı)
 - [ ] Menü
 - [ ] Game over
 - [ ] Zafer ekranı
@@ -117,6 +119,7 @@ Sunumda bu liste sırayla gösterilir; her satır oyunda tetiklenmeli.
 
 ### Ses (+1 / 2 efekt, müzik +2)
 - [ ] `jump`, `coin`, `hit`, `slash`, `stomp`, `death` (6 efekt = +3)
+- [ ] Arka plan müziği: `assets/music/castle.wav` (+2)
 
 ### Twist (+3)
 - [ ] 30. dakikada çekilecek kart (henüz eklenmedi)
@@ -125,8 +128,10 @@ Sunumda bu liste sırayla gösterilir; her satır oyunda tetiklenmeli.
 
 ```text
 index.html
-src/main.js              # tüm oyun (tek dosya)
+src/main.js              # oyun
+src/levels.js            # 10 bölümlük zorluk eğrisi (tohumlu üreteç)
 scripts/gen-assets.mjs   # castle tile + bg + sfx üreteci
+scripts/gen-music.mjs    # özgün chiptune loop (castle.wav)
 scripts/import-kp.mjs    # Kings and Pigs paketini aktarır
 scripts/assets.mjs       # PNG ölçüm
 scripts/pnglib.mjs       # PNG oku/yaz/kırp (bağımlılıksız)
@@ -137,13 +142,11 @@ public/assets/
   pig/{idle,run,jump,fall,hit,dead,attack,ground}.png    (34x28)
   king_pig/{...}.png                                     (38x28)
   bomb_pig/{idle,run,picking_bomb,throwing_boom}.png     (26x26)
-  frog/{idle,run,jump,fall,hit,double_jump}.png          (32x32, Pixel Adventure 1)
-  fruits/{apple,banana,cherries,kiwi,melon,orange,pineapple,strawberry}.png
   ui/{coin,diamond,heart,live_bar,numbers}.png
   tiles/{terrain,decor}.png
   props/{door,door_open,box,bomb,boom,cannon}.png
-  bg/{castle,pillars,blue,green,yellow,brown,gray,pink,purple}.png
-  terrain.png, traps/                                    (Pixel Adventure 1)
+  bg/{castle,pillars}.png
+  music/castle.wav
   {ground,dirt,platform,spike}.png
   sfx/{jump,coin,hit,slash,stomp,death}.wav
 ```
@@ -152,6 +155,8 @@ public/assets/
 
 - Kod: MIT (`LICENSE`).
 - Kings and Pigs — Pixel Frog (CC0). Tüm karakter, tile ve UI sprite'ları bu paketten.
+- `bg/`, `ground.png`, `dirt.png`, `platform.png`, `spike.png`, `music/castle.wav` ve `sfx/` bu depoda
+  kodla üretildi (CC0), paket paletine uyacak şekilde.
 - Pixel Adventure 1 — Pixel Frog (ücretsiz paket). `frog/`, `fruits/`, `bg/` renk desenleri,
   `terrain.png` ve `traps/` bu paketten; kaynak ZIP `Downloads/Pixel Adventure 1.zip`
   içinden `npm run import:pa1` ile aktarılır.

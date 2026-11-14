@@ -1,4 +1,5 @@
 ﻿import kaplay from "kaplay";
+import { createLevels } from "./levels.js";
 
 kaplay({
   width: 640,
@@ -70,115 +71,11 @@ loadSound("hit", "assets/sfx/hit.wav");
 loadSound("slash", "assets/sfx/slash.wav");
 loadSound("stomp", "assets/sfx/stomp.wav");
 loadSound("death", "assets/sfx/death.wav");
+loadSound("music", "assets/music/castle.wav");
 
-/* ------------------------------- odalar -------------------------------- */
-function makeRoom(build) {
-  const g = Array.from({ length: ROWS }, () => new Array(COLS).fill(" "));
-  const put = (x, y, ch) => {
-    if (y >= 0 && y < ROWS && x >= 0 && x < COLS) g[y][x] = ch;
-  };
-  const api = {
-    ground(x, y, w, h = 1) {
-      for (let dy = 0; dy < h; dy++) for (let dx = 0; dx < w; dx++) put(x + dx, y + dy, "#");
-    },
-    plat(x, y, w) {
-      for (let dx = 0; dx < w; dx++) put(x + dx, y, "=");
-    },
-    coin(x, y) {
-      put(x, y, "$");
-    },
-    heart(x, y) {
-      put(x, y, "H");
-    },
-    pig(x, y) {
-      put(x, y, "p");
-    },
-    kingpig(x, y) {
-      put(x, y, "P");
-    },
-    spike(x, y) {
-      put(x, y, "^");
-    },
-    door(x, y) {
-      put(x, y, "D");
-    },
-  };
-  build(api);
-  return g;
-}
-
-const ROOMS = [
-  makeRoom((b) => {
-    b.ground(0, 9, 60, 3);
-    b.plat(7, 7, 6);
-    b.plat(17, 6, 5);
-    b.plat(26, 7, 4);
-    b.plat(34, 6, 6);
-    b.plat(44, 7, 5);
-
-    b.coin(9, 6);
-    b.coin(10, 6);
-    b.coin(19, 5);
-    b.coin(20, 5);
-    b.coin(28, 6);
-    b.coin(36, 5);
-    b.coin(37, 5);
-    b.coin(38, 5);
-    b.coin(46, 6);
-    b.coin(3, 8);
-    b.coin(24, 8);
-    b.coin(52, 8);
-
-    b.heart(21, 8);
-
-    b.pig(8, 6);
-    b.pig(27, 8);
-    b.pig(35, 5);
-    b.pig(51, 8);
-
-    b.spike(31, 8);
-    b.spike(42, 8);
-
-    b.door(56, 8);
-  }),
-  makeRoom((b) => {
-    b.ground(0, 9, 24, 3);
-    b.ground(30, 9, 30, 3);
-    b.ground(24, 11, 6, 1); // cukurun tabani (dikenli)
-
-    b.plat(6, 6, 4);
-    b.plat(13, 7, 4);
-    b.plat(25, 8, 4);
-    b.plat(35, 6, 5);
-    b.plat(45, 7, 4);
-
-    b.coin(7, 5);
-    b.coin(8, 5);
-    b.coin(14, 6);
-    b.coin(15, 6);
-    b.coin(26, 7);
-    b.coin(27, 7);
-    b.coin(36, 5);
-    b.coin(37, 5);
-    b.coin(38, 5);
-    b.coin(46, 6);
-    b.coin(4, 8);
-    b.coin(32, 8);
-
-    b.heart(16, 8);
-
-    b.pig(10, 8);
-    b.pig(28, 7);
-    b.pig(35, 5);
-    b.kingpig(49, 8);
-
-    b.spike(25, 10);
-    b.spike(26, 10);
-    b.spike(27, 10);
-
-    b.door(56, 8);
-  }),
-];
+/* --------------------------- 10 bolum (levels.js) ---------------------- */
+const LEVEL_COUNT = 10;
+const LEVELS = createLevels(LEVEL_COUNT, ROWS, COLS);
 
 const WORLD_W = COLS * TILE;
 const WORLD_H = ROWS * TILE;
@@ -186,10 +83,23 @@ const WORLD_H = ROWS * TILE;
 /* ------------------------- oyun durumu (odalar arasi) ------------------- */
 const gameState = { room: 0, score: 0, hearts: MAX_HEARTS };
 
+/* --------------------------------- muzik -------------------------------- */
+let music = null;
+const startMusic = () => {
+  if (music) return;
+  music = play("music", { loop: true, volume: 0.22 });
+};
+const stopMusic = () => {
+  if (!music) return;
+  music.stop();
+  music = null;
+};
+
 const startGame = () => {
   gameState.room = 0;
   gameState.score = 0;
   gameState.hearts = MAX_HEARTS;
+  startMusic();
   go("game");
 };
 
@@ -214,7 +124,7 @@ scene("menu", () => {
 /* --------------------------------- oyun -------------------------------- */
 scene("game", () => {
   setCamScale(ZOOM);
-  const room = ROOMS[gameState.room];
+  const room = LEVELS[gameState.room];
   let score = gameState.score;
   let hearts = gameState.hearts;
   let invuln = 0;
@@ -311,7 +221,8 @@ scene("game", () => {
     e.tex = tex;
     e.dead = false;
     e.dir = Math.random() < 0.5 ? -1 : 1;
-    e.speed = king ? 34 : 46;
+    // bolum ilerledikce domuzlar hizlanir
+    e.speed = (king ? 32 : 44) + (gameState.room + 1) * 4;
 
     const feet = ty * TILE + TILE;
     const platform = solitsUnder(e.pos.x + w / 2, feet);
@@ -435,7 +346,7 @@ scene("game", () => {
 
   add([sprite("coin", { frame: 0 }), pos(width() - 16 - 4 * 16 - 26, 10), scale(2), z(100), fixed()]);
   add([
-    text("ODA " + (gameState.room + 1) + "/" + ROOMS.length, { size: 12 }),
+    text("ODA " + (gameState.room + 1) + "/" + LEVEL_COUNT, { size: 12 }),
     pos(width() / 2, 12),
     anchor("top"),
     z(100),
@@ -512,6 +423,24 @@ scene("game", () => {
   }
 
   /* --- hasar --- */
+  function safeSpot() {
+    const col = Math.max(1, Math.min(COLS - 2, Math.round(player.pos.x / TILE)));
+    for (let d = 0; d <= 8; d++) {
+      for (const x of d === 0 ? [col] : [col - d, col + d]) {
+        if (x < 2 || x >= COLS - 2) continue;
+        const clear =
+          room[8][x] === " " &&
+          room[8][x - 1] === " " &&
+          room[8][x + 1] === " " &&
+          room[9][x] === "#";
+        if (clear) {
+          return vec2(x * TILE + 2, 9 * TILE - KING_FEET);
+        }
+      }
+    }
+    return SPAWN.clone();
+  }
+
   function hurt() {
     if (invuln > 0) return;
     hearts--;
@@ -520,12 +449,13 @@ scene("game", () => {
     play("hit", { volume: 0.5 });
     if (hearts <= 0) {
       play("death", { volume: 0.5 });
+      stopMusic();
       gameState.score = score;
       go("gameover", score);
       return;
     }
     invuln = 1.3;
-    player.pos = SPAWN.clone();
+    player.pos = safeSpot();
     player.vel = vec2(0, 0);
   }
 
@@ -550,7 +480,20 @@ scene("game", () => {
       const king = e.tex === "kingpig";
       const eb = box(e, king ? 16 : 19, 19, king ? 12 : 10, 9);
       if (!overlaps(pb, eb)) continue;
-      if (player.vel.y > 80 && pb.y + pb.h < eb.y + 14) {
+      // Govdeler birbirine carpinca oyuncu domuzun ustunde durabiliyor (vy=0),
+      // bu yuzden "ayaklari domuzun ust kisminda mi" kontrolu de eziyor.
+      const feet = player.pos.y + KING_FEET;
+      const stomp = player.vel.y > 30 || feet <= e.pos.y + 16;
+      if (window.__dbg) {
+        window.__dbg.lastContact = {
+          py: Math.round(player.pos.y),
+          vy: Math.round(player.vel.y),
+          ey: Math.round(e.pos.y),
+          stomp,
+        };
+      }
+      // yukaridan iniyorsa ez (dusuk FPS'te de kacmasin)
+      if (stomp) {
         killEnemy(e, "stomp");
         player.vel.y = -430;
         shake(5);
@@ -580,7 +523,7 @@ scene("game", () => {
   player.onCollide("door", () => {
     gameState.score = score;
     gameState.hearts = hearts;
-    if (gameState.room + 1 < ROOMS.length) {
+    if (gameState.room + 1 < LEVEL_COUNT) {
       gameState.room++;
       go("game");
     } else {
@@ -673,11 +616,14 @@ scene("gameover", (score = 0) => {
 
 /* --------------------------------- kazandi ------------------------------ */
 scene("win", (score = 0) => {
+  stopMusic();
   add([rect(width(), height()), pos(0, 0), color(14, 10, 22)]);
-  add([text("KALE TEMIZLENDI!", { size: 30 }), pos(width() / 2, 104), anchor("center")]);
-  add([text("Toplanan altin: " + score, { size: 16 }), pos(width() / 2, 156), anchor("center")]);
-  add([text("SPACE = bastan oyna", { size: 14 }), pos(width() / 2, 226), anchor("center")]);
+  add([text("KALE TEMIZLENDI!", { size: 30 }), pos(width() / 2, 92), anchor("center")]);
+  add([text("10 bolumun hepsi bitti", { size: 14 }), pos(width() / 2, 132), anchor("center")]);
+  add([text("Toplanan altin: " + score, { size: 16 }), pos(width() / 2, 172), anchor("center")]);
+  add([text("SPACE = bastan oyna", { size: 14 }), pos(width() / 2, 238), anchor("center")]);
   onKeyPress("space", () => startGame());
 });
 
 go("menu");
+

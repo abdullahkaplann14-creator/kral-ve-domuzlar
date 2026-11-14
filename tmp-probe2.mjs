@@ -1,0 +1,25 @@
+﻿import { spawn } from "node:child_process";
+const PORT = 9338;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const chrome = spawn("C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", ["--headless=new", `--remote-debugging-port=${PORT}`, "--no-first-run", "--enable-unsafe-swiftshader", "--use-angle=swiftshader", "--user-data-dir=" + process.env.TEMP + "\\opencode\\chrome-probe-" + process.pid, "about:blank"], { stdio: "ignore" });
+let list;
+for (let i = 0; i < 40; i++) { try { list = await (await fetch(`http://127.0.0.1:${PORT}/json/list`)).json(); if (list.some(t => t.type === "page")) break; } catch {} await sleep(250); }
+const ws = new WebSocket(list.find(t => t.type === "page").webSocketDebuggerUrl);
+await new Promise((r, j) => { ws.onopen = r; ws.onerror = j; });
+let id = 0; const pend = new Map();
+ws.onmessage = (e) => { const m = JSON.parse(e.data); if (m.id && pend.has(m.id)) { const { r } = pend.get(m.id); pend.delete(m.id); r(m.result); } };
+const send = (m, p = {}) => new Promise((r) => { const i = ++id; pend.set(i, { r }); ws.send(JSON.stringify({ id: i, method: m, params: p })); });
+const ev = async (x) => (await send("Runtime.evaluate", { returnByValue: true, expression: x })).result?.value;
+await send("Runtime.enable"); await send("Page.enable");
+await send("Emulation.setDeviceMetricsOverride", { width: 960, height: 540, deviceScaleFactor: 1, mobile: false });
+await send("Page.navigate", { url: "http://localhost:5199/" });
+await sleep(2200);
+await send("Input.dispatchKeyEvent", { type: "keyDown", key: " ", code: "Space", windowsVirtualKeyCode: 32, text: " " });
+await send("Input.dispatchKeyEvent", { type: "keyUp", key: " ", code: "Space", windowsVirtualKeyCode: 32 });
+await sleep(1200);
+await send("Input.dispatchKeyEvent", { type: "keyDown", key: "ArrowRight", code: "ArrowRight", windowsVirtualKeyCode: 39 });
+await sleep(900);
+await send("Input.dispatchKeyEvent", { type: "keyUp", key: "ArrowRight", code: "ArrowRight", windowsVirtualKeyCode: 39 });
+await sleep(400);
+console.log(await ev(`JSON.stringify(get("*").filter(o => o.sprite).map(o => { const sp = o.screenPos(); return { s: o.sprite, tags: o.tags.filter(t => t !== "*"), x: Math.round(sp.x), y: Math.round(sp.y), w: Math.round(o.width), h: Math.round(o.height), op: o.opacity }; }), null, 0)`));
+ws.close(); chrome.kill();

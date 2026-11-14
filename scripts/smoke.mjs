@@ -1,4 +1,4 @@
-// Headless Chrome smoke testi: konsol hatalarini toplar, tus basar, durumu okur, ekran goruntusu alir.
+﻿// Headless Chrome smoke testi: konsol hatalarini toplar, tus basar, durumu okur, ekran goruntusu alir.
 // Kullanim: node scripts/smoke.mjs [url] [cikti.png]
 import { spawn } from "node:child_process";
 import { writeFileSync, mkdirSync } from "node:fs";
@@ -183,7 +183,11 @@ await key("keyUp", " ", "Space", 32);
 await sleep(500);
 console.log(`ziplama: ${y0} -> ${minY} (${y0 - minY}px yukseklik)`);
 
-// --- kilic testi: oyuncuyu domuzun yanina koy, kilici dogrudan calistir ---
+// --- testte diken kaynakli gurultuyu kaldir ---
+await evalJS(`get("hazard").forEach((h) => destroy(h))`);
+
+// --- kilic testi: domuzlari dondur, kilici dogrudan calistir ---
+await evalJS(`get("enemy").forEach((e) => { e._savedSpeed = e.speed; e.speed = 0; })`);
 const before = await dump();
 await evalJS(`(() => {
   const p = get("player")[0];
@@ -226,32 +230,62 @@ console.log(
 );
 await sleep(600);
 const afterStomp = await dump();
+await evalJS(`get("enemy").forEach((e) => { if (e._savedSpeed) e.speed = e._savedSpeed; })`);
 console.log(
   "stomp:",
   JSON.stringify({
     pigsDead: afterStomp.pigs.filter((p) => p.dead).length,
     dbg: await evalJS(`JSON.stringify(window.__dbg.state())`),
+    last: await evalJS(`JSON.stringify(window.__dbg.lastContact)`),
   }),
 );
 
-// --- oda gecisi testi: room 1 kapisina isinla ---
-await evalJS(`window.__dbg.teleport(1786, 260)`);
-await sleep(900);
-const room2 = await dump();
-console.log("oda gecisi:", JSON.stringify({ texts: room2.texts, coins: room2.coins, pigs: room2.pigs.length, hearts: room2.hearts }));
-const shot2 = await send("Page.captureScreenshot", { format: "png" });
-writeFileSync(OUT.replace(/\.png$/, "-room2.png"), Buffer.from(shot2.data, "base64"));
-
-// --- tehlike / can testi (oda 2 dikenleri): 5 kez -> game over ---
+// --- tehlike testi: ilk dikeni bul, 5 kez ustune git -> game over ---
+await evalJS(
+  `(() => { if (!(get("hazard") || []).length) add([sprite("spike"), pos(300, 256), area({ shape: new Rect(vec2(6, 14), 20, 18) }), "hazard"]); return true; })()`,
+);
+const spike = JSON.parse(
+  await evalJS(`(() => { const s = (get("hazard") || [])[0]; return s ? JSON.stringify({ x: Math.round(s.pos.x), y: Math.round(s.pos.y) }) : "null"; })()`),
+);
+console.log("diken:", JSON.stringify(spike));
 for (let i = 0; i < 5; i++) {
-  await evalJS(`window.__dbg.teleport(840, 290)`);
-  await sleep(450);
+  if (spike) await evalJS(`window.__dbg.teleport(${spike.x + 6}, ${spike.y - 40})`);
+  await sleep(500);
   const d = await dump();
   console.log(`hazard ${i + 1}: can=${d.hearts}`);
-  await sleep(1150);
+  await sleep(1200);
+}
+await sleep(700);
+const over = await dump();
+console.log("game over:", JSON.stringify({ texts: over.texts, player: over.player }));
+
+// --- yeniden basla: 10 bolumu kapidan gecerek bitir ---
+await tap(" ", "Space", 32, " ");
+await sleep(900);
+for (let i = 1; i <= 10; i++) {
+  const d = await dump();
+  const door = JSON.parse(
+    await evalJS(`(() => { const d = (get("door") || [])[0]; return d ? JSON.stringify({ x: Math.round(d.pos.x + 22), y: Math.round(d.pos.y + 20) }) : "null"; })()`),
+  );
+  if (!door) {
+    console.log("oda", i, ": kapi yok");
+    break;
+  }
+  console.log(
+    "oda",
+    i,
+    "->",
+    JSON.stringify({ texts: d.texts, pigs: d.pigs.length, coins: d.coins, hearts: d.hearts }),
+  );
+  if ([2, 5, 8, 10].includes(i)) {
+    const shotN = await send("Page.captureScreenshot", { format: "png" });
+    writeFileSync(OUT.replace(/\.png$/, `-oda${i}.png`), Buffer.from(shotN.data, "base64"));
+  }
+  await evalJS(`window.__dbg.teleport(${door.x}, ${door.y})`);
+  await sleep(800);
 }
 await sleep(600);
-console.log("son:", JSON.stringify(await dump()));
+console.log("final:", JSON.stringify(await dump()));
 
 const errShot = await send("Page.captureScreenshot", { format: "png" });
 writeFileSync(OUT.replace(/\.png$/, "-end.png"), Buffer.from(errShot.data, "base64"));
@@ -267,3 +301,5 @@ if (errors.length) {
 ws.close();
 cleanup();
 process.exit(errors.length ? 1 : 0);
+
+
