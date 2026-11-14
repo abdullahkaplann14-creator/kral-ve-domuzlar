@@ -6,6 +6,11 @@ Motor KAPLAY 3001.x, dahili fizik; harici fizik kütüphanesi yok. Bölüm ilerl
 
 **Canlı demo:** https://abdullahkaplann14-creator.github.io/kral-ve-domuzlar/
 
+Açılışta **şifre ekranı** gelir:
+
+- Şifre `1234` → **admin modu** (çift zıplama açılır, HUD'da `ADMIN · CIFT ZIPLA` yazar).
+- **NORMAL OYNA** butonu → çift zıplama olmadan normal oyun.
+
 ![Oyun içi](docs/screenshot-room1.png)
 
 <details>
@@ -41,7 +46,9 @@ node scripts/analyze.mjs bbox public/assets/king/idle.png 78     # sprite sını
 | `A` / `D` veya `←` / `→` | Yürü |
 | `SPACE` / `↑` / `W` | Zıpla (basılı tut = daha yüksek) |
 | `X` / `J` | Kılıç saldırısı |
-| `SPACE` (menü / game over) | Başla / tekrar dene |
+| `ENTER` (giriş ekranı) | Şifreyi onayla (`1234` = admin) |
+| `SPACE` (game over / zafer) | Aynı modda tekrar dene |
+| `L` (game over / zafer) | Giriş ekranına dön |
 
 ## Mekanikler
 
@@ -61,6 +68,7 @@ node scripts/analyze.mjs bbox public/assets/king/idle.png 78     # sprite sını
 14. Kapı ile bölüm geçişi, skor ve can taşınır
 15. Kamera takibi (yumuşak, clamp'li)
 16. Arka plan müziği (özgün chiptune loop, `M` ile susturma yok — ses seviyeleri dengeli)
+17. Şifre ekranı + admin modu (çift zıplama) ve "Normal Oyna" butonu
 
 ## İçerik puan listesi
 

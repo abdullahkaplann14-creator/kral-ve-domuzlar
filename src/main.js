@@ -81,7 +81,7 @@ const WORLD_W = COLS * TILE;
 const WORLD_H = ROWS * TILE;
 
 /* ------------------------- oyun durumu (odalar arasi) ------------------- */
-const gameState = { room: 0, score: 0, hearts: MAX_HEARTS };
+const gameState = { room: 0, score: 0, hearts: MAX_HEARTS, admin: false };
 
 /* --------------------------------- muzik -------------------------------- */
 let music = null;
@@ -95,7 +95,8 @@ const stopMusic = () => {
   music = null;
 };
 
-const startGame = () => {
+const startGame = (admin = false) => {
+  gameState.admin = admin;
   gameState.room = 0;
   gameState.score = 0;
   gameState.hearts = MAX_HEARTS;
@@ -103,22 +104,98 @@ const startGame = () => {
   go("game");
 };
 
-/* --------------------------------- menu -------------------------------- */
-scene("menu", () => {
+/* ------------------------------ giris ekrani ---------------------------- */
+const PASSWORD = "1234";
+
+scene("login", () => {
+  const W = width();
+  const H = height();
+
   add([sprite("bg", { width: 1280, height: 360 }), pos(0, 0), z(-100)]);
+  add([rect(W, H), pos(0, 0), color(14, 10, 22), opacity(0.74), z(-50)]);
+
+  add([text("KRAL VE DOMUZLAR", { size: 32 }), pos(W / 2, 58), anchor("center"), z(10)]);
   add([
-    rect(width(), height()),
-    pos(0, 0),
-    color(14, 10, 22),
-    opacity(0.55),
-    z(-50),
+    text("Sifre gir (admin) veya normal oyna", { size: 12 }),
+    pos(W / 2, 94),
+    anchor("center"),
+    color(200, 180, 215),
+    z(10),
   ]);
-  add([text("KRAL VE DOMUZLAR", { size: 36 }), pos(width() / 2, 96), anchor("center"), z(10)]);
-  add([text("Kale domuzlardan temizlenmeli.", { size: 13 }), pos(width() / 2, 142), anchor("center"), z(10)]);
-  add([text("A / D veya OK  =  yuru", { size: 12 }), pos(width() / 2, 186), anchor("center"), z(10)]);
-  add([text("SPACE = zipla      X = kilic", { size: 12 }), pos(width() / 2, 208), anchor("center"), z(10)]);
-  add([text("SPACE = basla", { size: 20 }), pos(width() / 2, 268), anchor("center"), z(10)]);
-  onKeyPress("space", () => startGame());
+
+  // sifre kutusu
+  add([
+    rect(200, 40),
+    pos(W / 2, 148),
+    anchor("center"),
+    color(28, 20, 38),
+    outline(2, rgb(150, 115, 170)),
+    z(10),
+  ]);
+  const field = add([
+    text("", { size: 22 }),
+    pos(W / 2, 148),
+    anchor("center"),
+    z(11),
+    textInput(true, 4),
+  ]);
+
+  const msg = add([
+    text("", { size: 12 }),
+    pos(W / 2, 190),
+    anchor("center"),
+    color(255, 120, 120),
+    z(11),
+  ]);
+
+  function tryLogin() {
+    if (field.typedText === PASSWORD) {
+      play("coin", { volume: 0.4 });
+      startGame(true);
+    } else {
+      msg.text = "Hatali sifre";
+      field.typedText = "";
+      field.text = "";
+      shake(6);
+    }
+  }
+
+  const mkButton = (label, x, y, w, base, hover, action) => {
+    const btn = add([
+      rect(w, 40),
+      pos(x, y),
+      anchor("center"),
+      color(base[0], base[1], base[2]),
+      outline(2, rgb(38, 26, 48)),
+      area(),
+      z(10),
+    ]);
+    add([text(label, { size: 16 }), pos(x, y), anchor("center"), z(11)]);
+    btn.onHover(() => {
+      btn.color = rgb(hover[0], hover[1], hover[2]);
+    });
+    btn.onHoverEnd(() => {
+      btn.color = rgb(base[0], base[1], base[2]);
+    });
+    btn.onClick(() => {
+      play("coin", { volume: 0.3 });
+      action();
+    });
+    return btn;
+  };
+
+  mkButton("GIRIS", W / 2 - 108, 246, 180, [70, 110, 70], [95, 150, 95], tryLogin);
+  mkButton("NORMAL OYNA", W / 2 + 108, 246, 180, [92, 72, 122], [122, 98, 158], () => startGame(false));
+
+  add([
+    text("ENTER = girisi onayla   ·   admin modunda cift zipla acilir", { size: 11 }),
+    pos(W / 2, 300),
+    anchor("center"),
+    color(170, 150, 190),
+    z(10),
+  ]);
+
+  onKeyPress("enter", tryLogin);
 });
 
 /* --------------------------------- oyun -------------------------------- */
@@ -355,6 +432,17 @@ scene("game", () => {
   renderHearts();
   renderScore();
 
+  if (gameState.admin) {
+    add([
+      text("ADMIN · CIFT ZIPLA", { size: 11 }),
+      pos(width() / 2, 30),
+      anchor("top"),
+      color(130, 225, 150),
+      z(100),
+      fixed(),
+    ]);
+  }
+
   /* --- juice --- */
   function pop(p, col = [255, 210, 140]) {
     for (let i = 0; i < 10; i++) {
@@ -536,6 +624,8 @@ scene("game", () => {
   let coyote = 0;
   let jumpBuffer = 0;
   let wasGrounded = true;
+  const maxJumps = gameState.admin ? 2 : 1; // admin sifresi = cift zipla
+  let jumpsUsed = 0;
 
   onUpdate(() => {
     const dir =
@@ -547,15 +637,36 @@ scene("game", () => {
       player.flipX = dir < 0;
     }
 
+    if (player.isGrounded()) jumpsUsed = 0;
+
     if (player.isGrounded()) coyote = 0.1;
     else coyote = Math.max(0, coyote - dt());
     jumpBuffer = Math.max(0, jumpBuffer - dt());
 
-    if (jumpBuffer > 0 && coyote > 0) {
-      player.jump(JUMP_FORCE);
-      jumpBuffer = 0;
-      coyote = 0;
-      play("jump", { volume: 0.3 });
+    if (jumpBuffer > 0) {
+      const firstJump = coyote > 0 && jumpsUsed === 0;
+      const airJump = maxJumps > 1 && jumpsUsed > 0 && jumpsUsed < maxJumps;
+      if (firstJump || airJump) {
+        player.jump(JUMP_FORCE * (airJump ? 0.95 : 1));
+        jumpsUsed += 1;
+        jumpBuffer = 0;
+        coyote = 0;
+        play("jump", { volume: 0.3 });
+        if (airJump) {
+          for (let i = 0; i < 12; i++) {
+            const a = (Math.PI * 2 * i) / 12;
+            add([
+              pos(player.pos.add(39, 40)),
+              rect(3, 3),
+              color(200, 235, 255),
+              move(vec2(Math.cos(a), Math.sin(a)), 110),
+              opacity(1),
+              lifespan(0.3, { fade: 0.15 }),
+              z(20),
+            ]);
+          }
+        }
+      }
     }
 
     if (!wasGrounded && player.isGrounded()) dust(player.pos.add(14, KING_FEET));
@@ -598,7 +709,15 @@ scene("game", () => {
   window.__dbg = {
     attack,
     hurt,
-    state: () => ({ score, hearts, room: gameState.room, atkCd }),
+    state: () => ({
+      score,
+      hearts,
+      room: gameState.room,
+      admin: gameState.admin,
+      maxJumps,
+      jumpsUsed,
+      atkCd,
+    }),
     teleport: (x, y) => {
       player.pos = vec2(x, y);
       player.vel = vec2(0, 0);
@@ -611,8 +730,9 @@ scene("gameover", (score = 0) => {
   add([rect(width(), height()), pos(0, 0), color(14, 10, 22)]);
   add([text("KRAL DUSTU", { size: 34 }), pos(width() / 2, 110), anchor("center")]);
   add([text("Toplanan altin: " + score, { size: 16 }), pos(width() / 2, 164), anchor("center")]);
-  add([text("SPACE = tekrar dene", { size: 14 }), pos(width() / 2, 232), anchor("center")]);
-  onKeyPress("space", () => startGame());
+  add([text("SPACE = tekrar dene   ·   L = giris ekrani", { size: 14 }), pos(width() / 2, 232), anchor("center")]);
+  onKeyPress("space", () => startGame(gameState.admin));
+  onKeyPress("l", () => go("login"));
 });
 
 /* --------------------------------- kazandi ------------------------------ */
@@ -622,9 +742,10 @@ scene("win", (score = 0) => {
   add([text("KALE TEMIZLENDI!", { size: 30 }), pos(width() / 2, 92), anchor("center")]);
   add([text("10 bolumun hepsi bitti", { size: 14 }), pos(width() / 2, 132), anchor("center")]);
   add([text("Toplanan altin: " + score, { size: 16 }), pos(width() / 2, 172), anchor("center")]);
-  add([text("SPACE = bastan oyna", { size: 14 }), pos(width() / 2, 238), anchor("center")]);
-  onKeyPress("space", () => startGame());
+  add([text("SPACE = bastan oyna   ·   L = giris ekrani", { size: 14 }), pos(width() / 2, 238), anchor("center")]);
+  onKeyPress("space", () => startGame(gameState.admin));
+  onKeyPress("l", () => go("login"));
 });
 
-go("menu");
+go("login");
 

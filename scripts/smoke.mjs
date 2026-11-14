@@ -1,4 +1,5 @@
-﻿// Headless Chrome smoke testi: konsol hatalarini toplar, tus basar, durumu okur, ekran goruntusu alir.
+﻿// Headless Chrome smoke testi: giris ekrani, admin sifresi, cift ziplama,
+// savas, hasar, 10 bolum gecisi ve zafer ekrani.
 // Kullanim: node scripts/smoke.mjs [url] [cikti.png]
 import { spawn } from "node:child_process";
 import { writeFileSync, mkdirSync } from "node:fs";
@@ -9,6 +10,7 @@ const OUT = process.argv[3] ?? "smoke.png";
 const PORT = 9333;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const shotPath = (suffix) => OUT.replace(/\.png$/, suffix + ".png");
 
 const chrome = spawn(
   CHROME,
@@ -102,11 +104,65 @@ const tap = async (k, code, vk, text) => {
   await key("keyDown", k, code, vk, text);
   await key("keyUp", k, code, vk);
 };
+const typeDigit = async (d) => {
+  await key("keyDown", d, "Digit" + d, 48 + Number(d), d);
+  await key("keyUp", d, "Digit" + d, 48 + Number(d));
+};
+const click = async (x, y) => {
+  await send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+  await send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", clickCount: 1 });
+  await send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", clickCount: 1 });
+};
 
 const evalJS = async (expr) => {
   const r = await send("Runtime.evaluate", { expression: expr, returnByValue: true });
   if (r.exceptionDetails) return { error: r.exceptionDetails.text };
   return r.result?.value;
+};
+
+const dump = async () =>
+  JSON.parse(
+    await evalJS(`(() => {
+      const p = window.get ? get("player")[0] : null;
+      return JSON.stringify({
+        canvas: !!document.querySelector("canvas"),
+        player: p ? { x: Math.round(p.pos.x), y: Math.round(p.pos.y) } : null,
+        pigs: window.get ? get("enemy").map((e) => ({ x: Math.round(e.pos.x), y: Math.round(e.pos.y), dead: !!e.dead })) : [],
+        coins: window.get ? get("coin").length : -1,
+        hearts: window.get ? get("hudheart").length : -1,
+        digits: window.get ? get("hudscore").map((s) => s.frame) : [],
+        texts: window.get ? get("text").map((t) => t.text) : [],
+        dbg: window.__dbg ? window.__dbg.state() : null,
+      });
+    })()`),
+  );
+
+const screenshot = async (suffix) => {
+  const shot = await send("Page.captureScreenshot", { format: "png" });
+  mkdirSync("screenshots", { recursive: true });
+  writeFileSync(shotPath(suffix), Buffer.from(shot.data, "base64"));
+};
+
+const jumpHeight = async (double) => {
+  await sleep(400);
+  const y0 = await evalJS(`Math.round(get("player")[0].pos.y)`);
+  let minY = y0;
+  await key("keyDown", " ", "Space", 32, " ");
+  if (double) {
+    await sleep(240);
+    await key("keyUp", " ", "Space", 32);
+    await key("keyDown", " ", "Space", 32, " ");
+    await sleep(140);
+    await key("keyUp", " ", "Space", 32);
+  }
+  for (let i = 0; i < 18; i++) {
+    await sleep(40);
+    const y = await evalJS(`Math.round(get("player")[0].pos.y)`);
+    if (y < minY) minY = y;
+  }
+  await key("keyUp", " ", "Space", 32);
+  await sleep(500);
+  return y0 - minY;
 };
 
 await send("Runtime.enable");
@@ -118,76 +174,52 @@ await send("Emulation.setDeviceMetricsOverride", {
   deviceScaleFactor: 1,
   mobile: false,
 });
+
+/* ------------------------- 1) giris ekrani ------------------------- */
 await send("Page.navigate", { url: URL });
 await sleep(2500);
+const loginDump = await dump();
+console.log("giris ekrani:", JSON.stringify({ texts: loginDump.texts, player: loginDump.player }));
+await screenshot("-login");
 
-const dump = async () =>
-  JSON.parse(
-    await evalJS(`(() => {
-      const p = window.get ? get("player")[0] : null;
-      return JSON.stringify({
-        canvas: !!document.querySelector("canvas"),
-        scene: p ? "game" : (window.get ? (get("text").length ? "menu/over" : "?") : "?"),
-        player: p ? { x: Math.round(p.pos.x), y: Math.round(p.pos.y) } : null,
-        pigs: window.get ? get("enemy").map((e) => ({ x: Math.round(e.pos.x), y: Math.round(e.pos.y), dead: !!e.dead })) : [],
-        coins: window.get ? get("coin").length : -1,
-        solids: window.get ? get("solid").length : -1,
-        hearts: window.get ? get("hudheart").length : -1,
-        digits: window.get ? get("hudscore").map((s) => s.frame) : [],
-        texts: window.get ? get("text").map((t) => t.text) : [],
-      });
-    })()`),
-  );
+/* --------------------- 2) sifre ile admin girisi -------------------- */
+for (const d of "1234") await typeDigit(d);
+await sleep(250);
+console.log("sifre alani:", await evalJS(`JSON.stringify((get("text") || []).map(t => t.text).filter(t => t && t.length <= 4))`));
+await tap("Enter", "Enter", 13);
+await sleep(1200);
+const adminDump = await dump();
+console.log("admin giris:", JSON.stringify({ dbg: adminDump.dbg, texts: adminDump.texts.slice(0, 4), player: adminDump.player }));
 
-console.log("menu:", JSON.stringify(await dump()));
+/* ------------------------ 3) admin cift zipla ----------------------- */
+const adminJump = await jumpHeight(true);
+console.log(`admin ziplama: ${adminJump}px`);
 
-const menuShot = await send("Page.captureScreenshot", { format: "png" });
-writeFileSync(OUT.replace(/\.png$/, "-menu.png"), Buffer.from(menuShot.data, "base64"));
+/* --------------------- 4) normal oyna butonu ----------------------- */
+await send("Page.navigate", { url: URL });
+await sleep(2500);
+// NORMAL OYNA butonu: mantiksal (428, 246) -> 1.5x olcek
+await click(642, 369);
+await sleep(1200);
+const normalDump = await dump();
+console.log("normal giris:", JSON.stringify({ dbg: normalDump.dbg, player: normalDump.player }));
+const normalJump = await jumpHeight(false);
+console.log(`normal ziplama: ${normalJump}px`);
 
-// menuden oyuna gec
-await tap(" ", "Space", 32, " ");
-await sleep(900);
-console.log("oyun basi:", JSON.stringify(await dump()));
-
-// saga kos + zipla
+/* --------------------- 5) oyun akisi ------------------------------ */
 await key("keyDown", "ArrowRight", "ArrowRight", 39);
 await sleep(650);
 await tap(" ", "Space", 32, " ");
 await sleep(420);
-await tap(" ", "Space", 32, " ");
-await sleep(420);
 await key("keyUp", "ArrowRight", "ArrowRight", 39);
 await sleep(300);
+await screenshot("");
+console.log("kosu:", JSON.stringify({ player: (await dump()).player }));
 
-const afterRun = await dump();
-console.log("kosu sonrasi:", JSON.stringify({ player: afterRun.player, coins: afterRun.coins, pigs: afterRun.pigs.length }));
-
-await sleep(200);
-const shot = await send("Page.captureScreenshot", { format: "png" });
-mkdirSync("screenshots", { recursive: true });
-writeFileSync(OUT, Buffer.from(shot.data, "base64"));
-console.log("ekran goruntusu:", OUT);
-
-// --- ziplama testi (space basili tutulur) ---
-await evalJS(`window.__dbg.teleport(64, 244)`);
-await sleep(500);
-const y0 = await evalJS(`Math.round(get("player")[0].pos.y)`);
-await key("keyDown", " ", "Space", 32, " ");
-let minY = y0;
-for (let i = 0; i < 14; i++) {
-  await sleep(50);
-  const y = await evalJS(`Math.round(get("player")[0].pos.y)`);
-  if (y < minY) minY = y;
-}
-await key("keyUp", " ", "Space", 32);
-await sleep(500);
-console.log(`ziplama: ${y0} -> ${minY} (${y0 - minY}px yukseklik)`);
-
-// --- testte diken kaynakli gurultuyu kaldir ---
+// testte diken kaynakli gurultuyu kaldir, domuzlari dondur
 await evalJS(`get("hazard").forEach((h) => destroy(h))`);
-
-// --- kilic testi: domuzlari dondur, kilici dogrudan calistir ---
 await evalJS(`get("enemy").forEach((e) => { e._savedSpeed = e.speed; e.speed = 0; })`);
+
 const before = await dump();
 await evalJS(`(() => {
   const p = get("player")[0];
@@ -205,16 +237,10 @@ console.log(
   JSON.stringify({
     pigsBefore: before.pigs.filter((p) => !p.dead).length,
     pigsDead: afterAttack.pigs.filter((p) => p.dead).length,
-    digits: afterAttack.digits,
     dbg: await evalJS(`JSON.stringify(window.__dbg.state())`),
   }),
 );
 
-// --- stomp testi: domuzun ustune birak ---
-console.log(
-  "stomp oncesi:",
-  await evalJS(`(() => { const p = get("player")[0]; const e = get("enemy").find(e => !e.dead); return JSON.stringify({p: p && [Math.round(p.pos.x), Math.round(p.pos.y)], e: e && [Math.round(e.pos.x), Math.round(e.pos.y)]}); })()`),
-);
 await evalJS(`(() => {
   const p = get("player")[0];
   const e = get("enemy").find((e) => !e.dead);
@@ -223,14 +249,8 @@ await evalJS(`(() => {
   p.vel = vec2(0, 220);
   return true;
 })()`);
-await sleep(250);
-console.log(
-  "stomp 250ms:",
-  await evalJS(`(() => { const p = get("player")[0]; const e = get("enemy").find(e => !e.dead); return JSON.stringify({p: p && [Math.round(p.pos.x), Math.round(p.pos.y), Math.round(p.vel.y)], e: e && [Math.round(e.pos.x), Math.round(e.pos.y)]}); })()`),
-);
-await sleep(600);
+await sleep(850);
 const afterStomp = await dump();
-await evalJS(`get("enemy").forEach((e) => { if (e._savedSpeed) e.speed = e._savedSpeed; })`);
 console.log(
   "stomp:",
   JSON.stringify({
@@ -239,15 +259,15 @@ console.log(
     last: await evalJS(`JSON.stringify(window.__dbg.lastContact)`),
   }),
 );
+await evalJS(`get("enemy").forEach((e) => { if (e._savedSpeed) e.speed = e._savedSpeed; })`);
 
-// --- tehlike testi: ilk dikeni bul, 5 kez ustune git -> game over ---
+/* ------------------------- 6) hasar / game over -------------------- */
 await evalJS(
   `(() => { if (!(get("hazard") || []).length) add([sprite("spike"), pos(300, 256), area({ shape: new Rect(vec2(6, 14), 20, 18) }), "hazard"]); return true; })()`,
 );
 const spike = JSON.parse(
   await evalJS(`(() => { const s = (get("hazard") || [])[0]; return s ? JSON.stringify({ x: Math.round(s.pos.x), y: Math.round(s.pos.y) }) : "null"; })()`),
 );
-console.log("diken:", JSON.stringify(spike));
 for (let i = 0; i < 5; i++) {
   if (spike) await evalJS(`window.__dbg.teleport(${spike.x + 6}, ${spike.y - 40})`);
   await sleep(500);
@@ -259,7 +279,7 @@ await sleep(700);
 const over = await dump();
 console.log("game over:", JSON.stringify({ texts: over.texts, player: over.player }));
 
-// --- yeniden basla: 10 bolumu kapidan gecerek bitir ---
+/* ------------------------ 7) 10 bolum gecisi ---------------------- */
 await tap(" ", "Space", 32, " ");
 await sleep(900);
 for (let i = 1; i <= 10; i++) {
@@ -271,26 +291,17 @@ for (let i = 1; i <= 10; i++) {
     console.log("oda", i, ": kapi yok");
     break;
   }
-  console.log(
-    "oda",
-    i,
-    "->",
-    JSON.stringify({ texts: d.texts, pigs: d.pigs.length, coins: d.coins, hearts: d.hearts }),
-  );
-  if ([2, 5, 8, 10].includes(i)) {
-    const shotN = await send("Page.captureScreenshot", { format: "png" });
-    writeFileSync(OUT.replace(/\.png$/, `-oda${i}.png`), Buffer.from(shotN.data, "base64"));
-  }
+  console.log("oda", i, "->", JSON.stringify({ texts: d.texts, pigs: d.pigs.length, hearts: d.hearts }));
+  if ([2, 5, 8, 10].includes(i)) await screenshot(`-oda${i}`);
   await evalJS(`window.__dbg.teleport(${door.x}, ${door.y})`);
   await sleep(800);
 }
 await sleep(600);
 console.log("final:", JSON.stringify(await dump()));
 
-const errShot = await send("Page.captureScreenshot", { format: "png" });
-writeFileSync(OUT.replace(/\.png$/, "-end.png"), Buffer.from(errShot.data, "base64"));
+await screenshot("-end");
 
-if (logs.length) console.log("\n--- konsol ---\n" + logs.slice(-20).join("\n"));
+if (logs.length) console.log("\n--- konsol ---\n" + logs.slice(-15).join("\n"));
 if (errors.length) {
   console.log("\nFAIL: " + errors.length + " hata");
   console.log(errors.slice(0, 10).join("\n"));
@@ -301,5 +312,3 @@ if (errors.length) {
 ws.close();
 cleanup();
 process.exit(errors.length ? 1 : 0);
-
-
