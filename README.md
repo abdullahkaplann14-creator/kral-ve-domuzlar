@@ -157,6 +157,9 @@ public/assets/
 - Kings and Pigs — Pixel Frog (CC0). Tüm karakter, tile ve UI sprite'ları bu paketten.
 - `bg/`, `ground.png`, `dirt.png`, `platform.png`, `spike.png`, `music/castle.wav` ve `sfx/` bu depoda
   kodla üretildi (CC0), paket paletine uyacak şekilde.
+
+Müziği değiştirmek istersen `public/assets/music/castle.wav` dosyasını kendi (lisanslı) parçanla
+değiştirmen yeterli; kod aynı yolu kullanıyor (döngü `loop: true`).
 - Pixel Adventure 1 — Pixel Frog (ücretsiz paket). `frog/`, `fruits/`, `bg/` renk desenleri,
   `terrain.png` ve `traps/` bu paketten; kaynak ZIP `Downloads/Pixel Adventure 1.zip`
   içinden `npm run import:pa1` ile aktarılır.
