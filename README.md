@@ -137,10 +137,13 @@ public/assets/
   pig/{idle,run,jump,fall,hit,dead,attack,ground}.png    (34x28)
   king_pig/{...}.png                                     (38x28)
   bomb_pig/{idle,run,picking_bomb,throwing_boom}.png     (26x26)
+  frog/{idle,run,jump,fall,hit,double_jump}.png          (32x32, Pixel Adventure 1)
+  fruits/{apple,banana,cherries,kiwi,melon,orange,pineapple,strawberry}.png
   ui/{coin,diamond,heart,live_bar,numbers}.png
   tiles/{terrain,decor}.png
   props/{door,door_open,box,bomb,boom,cannon}.png
-  bg/{castle,pillars}.png
+  bg/{castle,pillars,blue,green,yellow,brown,gray,pink,purple}.png
+  terrain.png, traps/                                    (Pixel Adventure 1)
   {ground,dirt,platform,spike}.png
   sfx/{jump,coin,hit,slash,stomp,death}.wav
 ```
@@ -149,6 +152,9 @@ public/assets/
 
 - Kod: MIT (`LICENSE`).
 - Kings and Pigs — Pixel Frog (CC0). Tüm karakter, tile ve UI sprite'ları bu paketten.
+- Pixel Adventure 1 — Pixel Frog (ücretsiz paket). `frog/`, `fruits/`, `bg/` renk desenleri,
+  `terrain.png` ve `traps/` bu paketten; kaynak ZIP `Downloads/Pixel Adventure 1.zip`
+  içinden `npm run import:pa1` ile aktarılır.
 - `bg/`, `ground.png`, `dirt.png`, `platform.png`, `spike.png` ve `sfx/` bu depoda
   kodla üretildi (CC0), paket paletine uyacak şekilde.
 - Ses üretimi isteğe bağlı olarak `jsfxr` ile değiştirilebilir.
