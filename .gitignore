@@ -7,3 +7,4 @@ asset-havuzu/
 tmp/
 asset-havuzu/
 smoke*.png
+tmp-*.mjs
