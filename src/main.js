@@ -522,7 +522,8 @@ scene("game", () => {
 
   player.onCollide("door", () => {
     gameState.score = score;
-    gameState.hearts = hearts;
+    // bolum temizleme odulu: +1 can (max 5)
+    gameState.hearts = Math.min(MAX_HEARTS, hearts + 1);
     if (gameState.room + 1 < LEVEL_COUNT) {
       gameState.room++;
       go("game");
